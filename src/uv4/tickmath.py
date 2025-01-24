@@ -18,11 +18,11 @@ def price_at_sqrt_ratio(sqrt_price: D) -> D:
 
 
 def sqrt_ratio_at_price(price: D) -> D:
-    return sqrt64_96(price)
+    return sqrt_raito_x96(price)
 
 
 def sqrt_ratio_at_tick(tick: D) -> D:
-    return sqrt64_96(price_at_tick(tick))
+    return sqrt_raito_x96(price_at_tick(tick))
 
 
 def tick_at_sqrt_ratio(sqrt_price: D) -> D:
@@ -30,10 +30,10 @@ def tick_at_sqrt_ratio(sqrt_price: D) -> D:
     return tick_at_price(price)
 
 
-def sqrt64_96(d_n: D) -> D:
+def sqrt_raito_x96(price: D) -> D:
     k = D("96")
-    q_n = d_n * (D("2") ** k)
-    return q_n
+    sqrt_price = price * (D("2") ** k)
+    return sqrt_price
 
 
 def liquidity_y(p: D, x: D, p_a: D, p_b: D) -> D:
