@@ -17,6 +17,7 @@ def integer_to_binary_string(n: int):
         else:
             s += "1"
         n >>= 1
+
     return "0b" + s[::-1]
 
 
@@ -27,6 +28,7 @@ def integer_to_64_bits_string(n: int) -> str:
     @return str -> '000000000000101' (64 length)
     """
     assert n < 2**64
+
     return f"{n:064b}"
 
 
@@ -48,6 +50,7 @@ def fraction_to_96_bits_precision(d: Decimal) -> str:
             d -= 1
         else:
             s += "0"
+
     return s
 
 
@@ -98,4 +101,5 @@ def integer_Q6496_to_decimal(n: int) -> Decimal:
         if n & 1 == 1:
             d += Decimal("2") ** -Decimal(str(i))
         n >>= 1
+
     return n + d
