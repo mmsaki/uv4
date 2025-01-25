@@ -1,8 +1,8 @@
 import optparse
 
 from uv4.tickmath import (
-    D,
-    sqrt_ratio_at_tick,
+    Decimal,
+    pricex96_at_tick,
     price_at_tick,
     liquidity_y,
     percentage_to_tick_bounds,
@@ -37,23 +37,23 @@ def main() -> None:
     if opts:
         d = opts.__dict__
         sqrt = "sqrt_ratio_at_tick"
-        value = D(d[sqrt])
+        value = Decimal(d[sqrt])
         if value is not None:
-            print(f"{sqrt}({value}) = {sqrt_ratio_at_tick(value)}")
+            print(f"{sqrt}({value}) = {pricex96_at_tick(value)}")
 
         price = "price_at_tick"
-        value = D(d[price])
+        value = Decimal(d[price])
         if value is not None:
             print(f"{price}({value}) = {price_at_tick(value)}")
 
         liquidity = "liquidity"
         if d[liquidity]:
-            values = [D(i) for i in d[liquidity]]
+            values = [Decimal(i) for i in d[liquidity]]
             if values is not None:
                 print(f"{liquidity}({values}) = {liquidity_y(*values)}")
         ticks = "tick_bounds"
         if d[ticks]:
-            values = [D(i) for i in d[ticks]]
+            values = [Decimal(i) for i in d[ticks]]
             if values is not None:
                 print(f"{ticks}({values}) = {percentage_to_tick_bounds(*values)}")
 
