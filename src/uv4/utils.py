@@ -86,7 +86,12 @@ def decimal_to_Q6496_integer(d: Decimal) -> int:
 
 
 def integer_Q6496_to_decimal(n: int) -> Decimal:
-    """Converts Q64.96 integer fixed point to decimal"""
+    """Converts Q64.96 integer fixed point to decimal
+        - e.g 99035203142830421991929937920 to 1.25
+
+    @params n: int
+    @return Decimal
+    """
 
     d = Decimal("0")
     for i in range(96, 0, -1):
