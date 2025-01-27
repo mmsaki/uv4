@@ -5,17 +5,29 @@ from decimal import Decimal, getcontext
 getcontext().prec = 35
 
 
+def price_at_tick(tick: int) -> Decimal:
+    """Returns price at tick
+    - price = 1.0001^tick
 
+    @params tick: int
+    @return price: Decimal
+    """
 
-def price_at_tick(tick: Decimal) -> Decimal:
     return Decimal("1.0001") ** tick
 
 
 def tick_at_price(price: Decimal) -> Decimal:
+    """Returns tick at price
+        - tick = log(price) / log(1.0001)
+
+    @params price: Decimal
+    @return tick: int
+    """
+
     return Decimal(price.log10() / Decimal("1.0001").log10()).to_integral()
 
 
-def pricex96_at_tick(tick: Decimal) -> Decimal:
+def pricex96_at_tick(tick: int) -> Decimal:
     price = price_at_tick(tick)
     return price_to_pricex96(price)
 
