@@ -1,14 +1,22 @@
-from decimal import Decimal
-
-MIN_TICK = int(
-    Decimal(Decimal("2") ** -Decimal("128")).log10() / Decimal("1.0001").log10()
-)
-MAX_TICK = int(
-    Decimal(Decimal("2") ** Decimal("128")).log10() / Decimal("1.0001").log10()
-)
+# Decimal(Decimal("2") ** -Decimal("128")).log10() / Decimal("1.0001").log10()
+MIN_TICK = -887272
+# Decimal(Decimal("2") ** Decimal("128")).log10() / Decimal("1.0001").log10()
+MAX_TICK = 887272
 MIN_TICK_SPACING = 1
-MAX_TICK_SPACING = 2**16 // 2 - 1  # type(int16).max
+# 2**16 // 2 - 1  # type(int16).max
+MAX_TICK_SPACING = 32767
 
-assert MIN_TICK == -887272
-assert MAX_TICK == 887272
-assert MAX_TICK_SPACING == 32767
+BEFORE_INITIALIZE_FLAG = 1 << 13
+AFTER_INITIALIZE_FLAG = 1 << 12
+BEFORE_ADD_LIQUIDITY_FLAG = 1 << 11
+AFTER_ADD_LIQUIDITY_FLAG = 1 << 10
+BEFORE_REMOVE_LIQUIDITY_FLAG = 1 << 9
+AFTER_REMOVE_LIQUIDITY_FLAG = 1 << 8
+BEFORE_SWAP_FLAG = 1 << 7
+AFTER_SWAP_FLAG = 1 << 6
+BEFORE_DONATE_FLAG = 1 << 5
+AFTER_DONATE_FLAG = 1 << 4
+BEFORE_SWAP_RETURNS_DELTA_FLAG = 1 << 3
+AFTER_SWAP_RETURNS_DELTA_FLAG = 1 << 2
+AFTER_ADD_LIQUIDITY_RETURNS_DELTA_FLAG = 1 << 1
+AFTER_REMOVE_LIQUIDITY_RETURNS_DELTA_FLAG = 1 << 0
