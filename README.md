@@ -16,3 +16,16 @@ Math utils for Uniswap v4.
 - [x] get tick at Q64.96 price - `tick_at_sqrt_ratio`
 - [x] get Q64.96 price from price - `sqrt_ratio_at_price`
 - [x] get price from Q64.96 price - `price_at_sqrt_ratio`
+
+## 🧪 Run Tests
+
+Dependencies:
+
+- pytest
+- pytest-watcher
+
+Run command
+
+```sh
+ptw .
+```
