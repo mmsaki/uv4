@@ -13,10 +13,10 @@ def price_at_tick(tick: int) -> Decimal:
     @return price: Decimal
     """
 
-    return Decimal("1.0001") ** tick
+    return Decimal("1.0001") ** Decimal(str(tick))
 
 
-def tick_at_price(price: Decimal) -> Decimal:
+def tick_at_price(price: Decimal) -> int:
     """Returns tick at price
         - tick = log(price) / log(1.0001)
 
@@ -24,23 +24,27 @@ def tick_at_price(price: Decimal) -> Decimal:
     @return tick: int
     """
 
-    return Decimal(price.log10() / Decimal("1.0001").log10()).to_integral()
+    return int(price.log10() / Decimal("1.0001").log10())
 
 
-def pricex96_at_tick(tick: int) -> Decimal:
+def pricex96_at_tick(tick: int) -> int:
+    """Returns pricex96 at a given tick
+
+    @params tick: int
+    @return price96: int
+    """
     price = price_at_tick(tick)
     return price_to_pricex96(price)
 
 
-def tick_at_pricex96(sqrt_price: Decimal) -> Decimal:
+def tick_at_pricex96(sqrt_price: Decimal) -> int:
     price = pricex96_to_price(sqrt_price)
     return tick_at_price(price)
 
 
-def price_to_pricex96(price: Decimal) -> Decimal:
-    k = Decimal("96")
-    sqrt_price = price * (Decimal("2") ** k)
-    return sqrt_price
+def price_to_pricex96(price: Decimal) -> int:
+    sqrt_price = price * (Decimal("2") ** Decimal("96"))
+    return int(sqrt_price)
 
 
 def pricex96_to_price(price_x96: Decimal) -> Decimal:
@@ -61,9 +65,9 @@ def liquidity_y(p: Decimal, x: Decimal, p_a: Decimal, p_b: Decimal) -> Decimal:
     return y
 
 
-def percentage_to_tick_bounds(price: Decimal, rate: Decimal) -> Tuple[Decimal, Decimal]:
+def percentage_to_tick_bounds(price: Decimal, rate: Decimal) -> Tuple[int, int]:
     mid = tick_at_price(price)
     assert rate >= Decimal("0.01")
     low = mid - rate * Decimal("100")
     high = mid + rate * Decimal("100")
-    return low, high
+    return int(low), int(high)
