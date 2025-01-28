@@ -22,7 +22,10 @@ def main() -> None:
         type="string",
         action="callback",
         callback=get_values,
-        help="Get liquididity y given current price p, amount x, liquidity range betweeen p_a and p_b",
+        help="""Get liquididity y between price range
+            <price>,<amount_in>,<min_price>,<max_price>
+            price p, amount x, liquidity range [p_a, p_b]
+        """,
     )
 
     parser.add_option(
@@ -31,20 +34,25 @@ def main() -> None:
         type="string",
         action="callback",
         callback=get_values,
-        help="Get percentage into tick bounds",
+        help="""Get percentage into tick bounds
+            -t <price>,<rate>
+            <price> e.g 1.01 <rate> e.g 0.01
+        """,
     )
     opts, args = parser.parse_args()
     if opts:
         d = opts.__dict__
         sqrt = "sqrt_ratio_at_tick"
-        value = Decimal(d[sqrt])
-        if value is not None:
-            print(f"{sqrt}({value}) = {pricex96_at_tick(value)}")
+        if d[sqrt]:
+            value = d[sqrt]
+            if value is not None:
+                print(f"{sqrt}({value}) = {pricex96_at_tick(value)}")
 
         price = "price_at_tick"
-        value = Decimal(d[price])
-        if value is not None:
-            print(f"{price}({value}) = {price_at_tick(value)}")
+        if d[price]:
+            value = d[price]
+            if value is not None:
+                print(f"{price}({value}) = {price_at_tick(value)}")
 
         liquidity = "liquidity"
         if d[liquidity]:
