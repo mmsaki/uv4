@@ -68,6 +68,6 @@ def liquidity_y(p: Decimal, x: Decimal, p_a: Decimal, p_b: Decimal) -> Decimal:
 def percentage_to_tick_bounds(price: Decimal, rate: Decimal) -> Tuple[int, int]:
     mid = tick_at_price(price)
     assert rate >= Decimal("0.01")
-    low = mid - rate * Decimal("100")
-    high = mid + rate * Decimal("100")
+    low = mid - rate * Decimal("100")  # multiply by 100 to mormalize to tick
+    high = mid + rate * Decimal("100")  # multiply by 100 to mormalize to tick
     return int(low), int(high)
