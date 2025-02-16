@@ -1,7 +1,7 @@
 [project]
 name = "uv4"
 version = "0.1.0"
-description = "Add your description here"
+description = "python utilities for uniswap v4"
 readme = "README.md"
 authors = [
     { name = "Meek Msaki", email = "98189596+mmsaki@users.noreply.github.com" }
@@ -14,7 +14,12 @@ dependencies = [
     "eth-abi>=5.2.0",
     "mpmath>=1.3.0",
     "ipython>=8.18.1",
+    "twine>=6.1.0",
 ]
+
+[project.urls]
+Repository = "https://github.com/mmsaki/uv4.git"
+Issues = "https://github.com/mmsaki/uv4/issues"
 
 [project.scripts]
 uv4 = "uv4:main"
