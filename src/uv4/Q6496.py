@@ -7,7 +7,7 @@ class Q6496:
         assert value < 2**64
 
         self.value = Decimal(str(value))
-        self.q_number =  eval(self.to_Q6496_binary_string())
+        self.q_number = eval(self.to_Q6496_binary_string())
 
     def to_decimal(self) -> Decimal:
         """Converts Q64.96 integer fixed point to decimal
@@ -18,12 +18,13 @@ class Q6496:
         """
 
         d = Decimal("0")
+        q = self.q_number
         for i in range(96, 0, -1):
-            if self.q_number & 1 == 1:
+            if q & 1 == 1:
                 d += Decimal("2") ** -Decimal(str(i))
-            self.q_number >>= 1
+            q >>= 1
 
-        return self.q_number + d
+        return q + d
 
     def from_decimal(self) -> int:
         """Convert decimal to Q64.96 integer
