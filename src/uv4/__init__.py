@@ -1,19 +1,23 @@
 import optparse
+from decimal import Decimal
 
-from uv4.tickmath import (
-    Decimal,
-    pricex96_at_tick,
-    price_at_tick,
+from .tickmath import TickMath
+from .liquidity import (
     liquidity_y,
-    percentage_to_tick_bounds,
+    percentage_slippage_to_tick_bounds,
 )
+from eth_abi.abi import encode
 
 
 def main() -> None:
-    print("Hello from uv4!")
+    # print("Hello from uv4!")
+    t = TickMath()
     parser = optparse.OptionParser()
     parser.add_option(
-        "--sqrt_ratio_at_tick", "-s", type=int, help="Get square root ration at tick"
+        "--get_sqrt_price_at_tick",
+        "-s",
+        type="string",
+        help="Get square root ratin at tick",
     )
     parser.add_option("--price_at_tick", "-p", type=int, help="Get price at tick")
     parser.add_option(
@@ -42,17 +46,18 @@ def main() -> None:
     opts, args = parser.parse_args()
     if opts:
         d = opts.__dict__
-        sqrt = "sqrt_ratio_at_tick"
+        sqrt = "get_sqrt_price_at_tick"
         if d[sqrt]:
-            value = d[sqrt]
-            if value is not None:
-                print(f"{sqrt}({value}) = {pricex96_at_tick(value)}")
+            tick = d[sqrt]
+            if tick is not None:
+                sqrtx96 = t.to_sqrt_price_x96(tick)
+                print(f"0x{encode(['uint160'], [sqrtx96]).hex()}")
 
         price = "price_at_tick"
         if d[price]:
-            value = d[price]
-            if value is not None:
-                print(f"{price}({value}) = {price_at_tick(value)}")
+            tick = d[price]
+            if tick is not None:
+                print(f"{price}({tick}) = {t.to_price(tick)}")
 
         liquidity = "liquidity"
         if d[liquidity]:
@@ -63,7 +68,9 @@ def main() -> None:
         if d[ticks]:
             values = [Decimal(i) for i in d[ticks]]
             if values is not None:
-                print(f"{ticks}({values}) = {percentage_to_tick_bounds(*values)}")
+                print(
+                    f"{ticks}({values}) = {percentage_slippage_to_tick_bounds(*values)}"
+                )
 
 
 def get_values(option, opt, value, parser):

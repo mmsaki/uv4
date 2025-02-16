@@ -1,73 +1,71 @@
-from typing import Tuple
 from decimal import Decimal, getcontext
+from math import ceil, floor
+
+getcontext().prec = 96
 
 
-getcontext().prec = 35
+class TickMath:
+    MIN_TICK = -887272
+    MAX_TICK = 887272
+    MIN_TICK_SPACING = 1
+    MAX_TICK_SPACING = 32767
+    MIN_SQRT_PRICE = 4295128739
+    MAX_SQRT_PRICE = 1461446703485210103287273052203988822378723970342
 
+    def __init__(self, tick: int = 0, tick_spacing: int = 1):
+        self.tick = tick
+        self.tick_spacing = tick_spacing
 
-def price_at_tick(tick: int) -> Decimal:
-    """Returns price at tick
-    - price = 1.0001^tick
+    def max_usable_tick(self):
+        return (self.MAX_TICK / self.tick_spacing) * self.tick_spacing
 
-    @params tick: int
-    @return price: Decimal
-    """
+    def mix_usable_tick(self):
+        return (self.MIN_TICK / self.tick_spacing) * self.tick_spacing
 
-    return Decimal("1.0001") ** Decimal(str(tick))
+    def to_sqrt_price(self, tick: int) -> Decimal:
+        price = self.to_price(tick)
+        sqrt_price = price.sqrt()
+        return sqrt_price
 
+    def to_sqrt_price_x96(self, tick) -> int:
+        """Returns pricex96 at a given tick
 
-def tick_at_price(price: Decimal) -> int:
-    """Returns tick at price
-        - tick = log(price) / log(1.0001)
+        @params tick: int
+        @return price96: int
+        """
+        sqrt_price = self.to_sqrt_price(tick)
+        return ceil(sqrt_price * Decimal("2") ** Decimal("96"))
 
-    @params price: Decimal
-    @return tick: int
-    """
+    def from_sqrt_price(self, sqrt_price: Decimal) -> int:
+        price = sqrt_price ** Decimal("2")
+        tick = self.from_price(price)
+        return tick
 
-    return int(price.log10() / Decimal("1.0001").log10())
+    def from_sqrt_pricex96(self, sqrt_pricex96: int) -> int:
+        sqrt_price = Decimal(str(sqrt_pricex96)) / (2**96)
+        price = sqrt_price ** Decimal("2")
+        tick = self.from_price(price)
+        return tick
 
+    def to_price(self, tick: int) -> Decimal:
+        """Returns price at tick
+        - price = 1.0001^tick
 
-def pricex96_at_tick(tick: int) -> int:
-    """Returns pricex96 at a given tick
+        @params tick: int
+        @return price: Decimal
+        """
+        return Decimal("1.0001") ** Decimal(str(tick))
 
-    @params tick: int
-    @return price96: int
-    """
-    price = price_at_tick(tick)
-    return price_to_pricex96(price)
+    def from_price(self, price: Decimal) -> int:
+        """Returns tick at price
+            - tick = log(price) / log(1.0001)
 
+        @params price: Decimal
+        @return tick: int
+        """
+        return floor(price.log10() / Decimal("1.0001").log10())
 
-def tick_at_pricex96(sqrt_price: Decimal) -> int:
-    price = pricex96_to_price(sqrt_price)
-    return tick_at_price(price)
-
-
-def price_to_pricex96(price: Decimal) -> int:
-    sqrt_price = price * (Decimal("2") ** Decimal("96"))
-    return int(sqrt_price)
-
-
-def pricex96_to_price(price_x96: Decimal) -> Decimal:
-    return price_x96 / Decimal("2") ** Decimal("96")
-
-
-def liquidity_y(p: Decimal, x: Decimal, p_a: Decimal, p_b: Decimal) -> Decimal:
-    """
-    ETH/USDC
-    p: <decimal> current price of token0 e.g. 2000 USDC
-    x: <decimal> input amount of token token0 e.g. 2ETH
-    p_a: <decimal> lower liquidity bound token1 e.g. 1500 USDC
-    p_b: <decimal> upper liquidity bound token1 e.g. 2500 USDC
-    """
-    # liquidity of x
-    l_x = x * (p.sqrt() * p_b.sqrt()) / (p_b.sqrt() - p.sqrt())
-    y = l_x * (p.sqrt() - p_a.sqrt())
-    return y
-
-
-def percentage_to_tick_bounds(price: Decimal, rate: Decimal) -> Tuple[int, int]:
-    mid = tick_at_price(price)
-    assert rate >= Decimal("0.01")
-    low = mid - rate * Decimal("100")  # multiply by 100 to mormalize to tick
-    high = mid + rate * Decimal("100")  # multiply by 100 to mormalize to tick
-    return int(low), int(high)
+    def price_to_sqrtpricex96(self, price: Decimal) -> int:
+        sqrt_price = price.sqrt()
+        sqrtx96 = sqrt_price * Decimal("2") ** Decimal("96")
+        return int(sqrtx96)
