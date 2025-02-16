@@ -1,6 +1,7 @@
 import optparse
 from decimal import Decimal
 
+from .hook import Hook
 from .tickmath import TickMath
 from .liquidity import (
     liquidity_y,
