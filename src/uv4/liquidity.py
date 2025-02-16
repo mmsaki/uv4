@@ -1,4 +1,3 @@
-
 from typing import Tuple
 from decimal import Decimal
 from .tickmath import TickMath
