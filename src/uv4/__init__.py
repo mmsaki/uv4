@@ -2,12 +2,24 @@ import optparse
 from decimal import Decimal
 
 from .hook import Hook
+from .Q6496 import Q6496
 from .tickmath import TickMath
 from .liquidity import (
     liquidity_y,
     percentage_slippage_to_tick_bounds,
 )
+from .utils import (
+    integer_to_binary_string,
+)
 from eth_abi.abi import encode
+
+
+__all__ = [
+    "Hook",
+    "TickMath",
+    "Q6496",
+    "integer_to_binary_string",
+]
 
 
 def main() -> None:
@@ -51,20 +63,24 @@ def main() -> None:
         if d[sqrt]:
             tick = d[sqrt]
             if tick is not None:
-                sqrtx96 = t.to_sqrt_price_x96(tick)
+                t.tick = int(tick)
+                sqrtx96 = t.to_sqrt_price_x96()
                 print(f"0x{encode(['uint160'], [sqrtx96]).hex()}")
 
         price = "price_at_tick"
         if d[price]:
             tick = d[price]
             if tick is not None:
-                print(f"{price}({tick}) = {t.to_price(tick)}")
+                t.tick = int(tick)
+                price = t.to_price()
+                print(f"0x{encode(['uin160'], [price]).hex()}")
 
         liquidity = "liquidity"
         if d[liquidity]:
             values = [Decimal(i) for i in d[liquidity]]
             if values is not None:
                 print(f"{liquidity}({values}) = {liquidity_y(*values)}")
+
         ticks = "tick_bounds"
         if d[ticks]:
             values = [Decimal(i) for i in d[ticks]]
