@@ -1,6 +1,8 @@
 from typing import Tuple
 from decimal import Decimal
 from .tickmath import TickMath
+
+
 def liquidity_y(p: Decimal, x: Decimal, p_a: Decimal, p_b: Decimal) -> Decimal:
     """
     ETH/USDC
