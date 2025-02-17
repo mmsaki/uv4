@@ -1,6 +1,7 @@
 # UV4
 
 ![test](https://github.com/mmsaki/uv4/actions/workflows/test.yml/badge.svg)
+[![codecov](https://codecov.io/github/mmsaki/uv4/graph/badge.svg?token=36PUOA0L5F)](https://codecov.io/github/mmsaki/uv4)
 ![GitHub repo size](https://img.shields.io/github/repo-size/mmsaki/uv4)
 ![GitHub last commit](https://img.shields.io/github/last-commit/mmsaki/uv4)
 ![PyPI - Version](https://img.shields.io/pypi/v/uv4)
