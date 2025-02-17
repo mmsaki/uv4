@@ -37,7 +37,7 @@ jobs:
 
     # Codecov
     - name: Install dependencies
-        run: uv add pytest-cov
+      run: uv add pytest-cov
 
     - name: Run tests
       run: uv run pytest --cov-branch --cov-report=xml
