@@ -34,3 +34,16 @@ jobs:
       run: |
         # run test
         uv run pytest
+
+    # Codecov
+    - name: Install dependencies
+        run: uv add pytest-cov
+
+    - name: Run tests
+      run: uv run pytest --cov-branch --cov-report=xml
+
+    - name: Upload results to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        slug: mmsaki/uv4
