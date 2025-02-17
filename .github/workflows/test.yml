@@ -20,27 +20,27 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
+
     - name: Install dependencies
       run: |
         curl -LsSf https://astral.sh/uv/install.sh | sh
         uv venv
         source .venv/bin/activate
         uv lock
+
     - name: Test with pytest
       run: |
         # run test
         uv run pytest
 
     # Codecov
-    - name: Install dependencies
-      run: uv add pytest-cov
-
     - name: Run tests
-      run: uv run pytest --cov-branch --cov-report=xml
+      run: uv run pytest --cov=uv4 --cov-branch --cov-report=xml tests
 
     - name: Upload results to Codecov
       uses: codecov/codecov-action@v5
