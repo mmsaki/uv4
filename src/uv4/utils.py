@@ -1,6 +1,3 @@
-
-
-
 def integer_to_binary_string(n: int):
     """Covert integer to binary string
 
