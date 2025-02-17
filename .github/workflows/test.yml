@@ -39,8 +39,10 @@ jobs:
         uv run pytest
 
     # Codecov
-    - name: Run tests
-      run: uv run pytest --cov=uv4 --cov-branch --cov-report=xml tests
+    - name: Run tests coverage
+      run: |
+        uv run pytest --cov=uv4 --cov-branch --cov-report=xml tests
+        uv run pytest --cov --junitxml=junit.xml
 
     - name: Upload results to Codecov
       uses: codecov/codecov-action@v5
