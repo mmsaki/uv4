@@ -15,6 +15,7 @@ class TickMath:
     def __init__(self, tick: int = 0, tick_spacing: int = 1):
         self.tick = tick
         self.tick_spacing = tick_spacing
+        self.base = Decimal("1.0001")
 
     def max_usable_tick(self):
         return (self.MAX_TICK / self.tick_spacing) * self.tick_spacing
@@ -54,7 +55,7 @@ class TickMath:
         @params tick: int
         @return price: Decimal
         """
-        return Decimal("1.0001") ** Decimal(str(self.tick))
+        return self.base ** Decimal(str(self.tick))
 
     def from_price(self, price: Decimal) -> int:
         """Returns tick at price
@@ -63,7 +64,7 @@ class TickMath:
         @params price: Decimal
         @return tick: int
         """
-        return floor(price.log10() / Decimal("1.0001").log10())
+        return floor(price.log10() / self.base.log10())
 
     def price_to_sqrtpricex96(self, price: Decimal) -> int:
         sqrt_price = price.sqrt()
