@@ -3,7 +3,25 @@ from decimal import Decimal
 from .tickmath import TickMath
 
 
-def liquidity_y(p: Decimal, x: Decimal, p_a: Decimal, p_b: Decimal) -> Decimal:
+def liquidity_y_from_sqrt_prices(
+    p: Decimal, x: Decimal, p_a: Decimal, p_b: Decimal
+) -> Decimal:
+    """
+    ETH/USDC
+    p: <decimal> current price of token0 e.g. 2000 USDC
+    x: <decimal> input amount of token token0 e.g. 2ETH
+    p_a: <decimal> lower liquidity bound token1 e.g. 1500 USDC
+    p_b: <decimal> upper liquidity bound token1 e.g. 2500 USDC
+    """
+    # liquidity of x
+    l_x = x * (p * p_b) / (p_b - p)
+    y = l_x * (p - p_a)
+    return y
+
+
+def liquidity_y_from_prices(
+    p: Decimal, x: Decimal, p_a: Decimal, p_b: Decimal
+) -> Decimal:
     """
     ETH/USDC
     p: <decimal> current price of token0 e.g. 2000 USDC
@@ -14,6 +32,26 @@ def liquidity_y(p: Decimal, x: Decimal, p_a: Decimal, p_b: Decimal) -> Decimal:
     # liquidity of x
     l_x = x * (p.sqrt() * p_b.sqrt()) / (p_b.sqrt() - p.sqrt())
     y = l_x * (p.sqrt() - p_a.sqrt())
+    return y
+
+
+def liquidity_y_from_ticks(
+    current_tick: Decimal, x: Decimal, tick_lower: Decimal, tick_upper: Decimal
+) -> Decimal:
+    """
+    ETH/USDC
+    p: <decimal> current price of token0 e.g. 2000 USDC
+    x: <decimal> input amount of token token0 e.g. 2ETH
+    p_a: <decimal> lower liquidity bound token1 e.g. 1500 USDC
+    p_b: <decimal> upper liquidity bound token1 e.g. 2500 USDC
+    """
+    p = TickMath(int(current_tick)).to_sqrt_price()
+    p_a = TickMath(int(tick_lower)).to_sqrt_price()
+    p_b = TickMath(int(tick_upper)).to_sqrt_price()
+
+    # liquidity of x
+    l_x = x * (p * p_b) / (p_b - p)
+    y = l_x * (p - p_a)
     return y
 
 
