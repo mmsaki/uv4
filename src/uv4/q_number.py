@@ -2,12 +2,31 @@ from decimal import Decimal
 from typing import Union
 
 
-class Q6496:
-    def __init__(self, value: Union[Decimal, int, float]) -> None:
-        assert value < 2**64
+class QNumber:
+    """Q Number module
+    Fixed point number representation in form of Q number notation. Defaults to Q64.96.
+    See: https://en.wikipedia.org/wiki/Q_(number_format)
+
+        @param value - decimal value you want to represent in Q notation
+        @param? M - number of integer bits to represent fixed point Q number notation
+        @param? N - number of fraction bits to represent the fraction portion of your decimal
+
+
+    >>> q = QNumber('1.0001')
+    >>> q = QNumber('1.0001', M=128, N=128)
+    """
+
+    def __init__(
+        self, value: Union[Decimal, int, float], M: int = 64, N: int = 96
+    ) -> None:
+        """Initiliaze a decimal value"""
+        self.M = M
+        self.N = N
+
+        assert value < 2**self.M
 
         self.value = Decimal(str(value))
-        self.q_number = eval(self.to_Q6496_binary_string())
+        self.q_number = eval(self.to_binary_string())
 
     def to_decimal(self) -> Decimal:
         """Converts Q64.96 integer fixed point to decimal
@@ -19,7 +38,7 @@ class Q6496:
 
         d = Decimal("0")
         q = self.q_number
-        for i in range(96, 0, -1):
+        for i in range(self.N, 0, -1):
             if q & 1 == 1:
                 d += Decimal("2") ** -Decimal(str(i))
             q >>= 1
@@ -35,12 +54,12 @@ class Q6496:
         @return int
         """
 
-        q_number = eval(self.to_Q6496_binary_string())
-        assert int(self.value * 2**96) == q_number
+        q_number = eval(self.to_binary_string())
+        assert int(self.value * 2**self.N) == q_number
 
         return q_number
 
-    def to_Q6496_binary_string(self) -> str:
+    def to_binary_string(self) -> str:
         """Convert decimal to Q64.96 binary string
             - e.g. 0b000011110100000...
             -        |       |
@@ -51,23 +70,22 @@ class Q6496:
         @return str: '0b00000100000101' Q64.96 format
         """
 
-        m = self.get_64_bits_string()
-        n = self.get_96_bits_precision_string()
+        m = self.get_integer_bit_string()
+        n = self.get_fraction_bit_string()
 
         return "0b" + m + n
 
-    def get_64_bits_string(self) -> str:
+    def get_integer_bit_string(self) -> str:
         """Covert integer to 64 bit string
 
-        @params n: int constraint 2^64 > n < 0
         @return str -> '000000000000101' (64 length)
         """
-        d_int = int(self.value)
-        assert d_int < 2**64
+        m = int(self.value)
+        assert m < 2**self.M
 
-        return f"{d_int:064b}"
+        return f"{m:0{self.M}b}"
 
-    def get_96_bits_precision_string(self) -> str:
+    def get_fraction_bit_string(self) -> str:
         """Converts fraction decimal to 96 bits
             - e.g. 0.xxxxx to '0001010111'
             - Intended to be used in Q64.96 fixed point format
@@ -75,17 +93,17 @@ class Q6496:
         @params d: Decimal constraint 0 > d < 2^-96
         @return str: 96 bit string
         """
-        d_int = int(self.value)
-        d_fraction = self.value - d_int
+        m = int(self.value)
+        n = self.value - m
 
-        assert d_fraction < 1
+        assert n < 1
 
         s = ""
-        for _ in range(96):
-            d_fraction *= 2
-            if d_fraction >= 1:
+        for _ in range(self.N):
+            n *= 2
+            if n >= 1:
                 s += "1"
-                d_fraction -= 1
+                n -= 1
             else:
                 s += "0"
 
