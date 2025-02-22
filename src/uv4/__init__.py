@@ -2,7 +2,7 @@ import optparse
 from decimal import Decimal
 
 from .hook import Hook
-from .Q6496 import Q6496
+from .q_number import QNumber
 from .tickmath import TickMath
 from .liquidity import (
     liquidity_y_from_prices,
@@ -19,7 +19,7 @@ from eth_abi.abi import encode
 __all__ = [
     "Hook",
     "TickMath",
-    "Q6496",
+    "QNumber",
     "integer_to_binary_string",
     "liquidity_y_from_prices",
     "liquidity_y_from_ticks",
