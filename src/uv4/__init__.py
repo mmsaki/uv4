@@ -2,7 +2,7 @@ import optparse
 from decimal import Decimal
 
 from .hook import Hook
-from .q_number import QNumber
+from .q_number import QNumber, Q6496, Q128128
 from .tickmath import TickMath
 from .liquidity import (
     liquidity_y_from_prices,
@@ -20,6 +20,9 @@ __all__ = [
     "Hook",
     "TickMath",
     "QNumber",
+    "Q6496",
+    "Q128128",
+    "FullMath",
     "integer_to_binary_string",
     "liquidity_y_from_prices",
     "liquidity_y_from_ticks",

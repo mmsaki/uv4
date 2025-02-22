@@ -108,3 +108,25 @@ class QNumber:
                 s += "0"
 
         return s
+
+
+class Q6496(QNumber):
+    def __init__(self, value) -> None:
+        super().__init__(value, M=64, N=96)
+
+    def get_64_bits_string(self):
+        return super().get_integer_bit_string()
+
+    def get_96_bits_string(self):
+        return super().get_fraction_bit_string()
+
+
+class Q128128(QNumber):
+    def __init__(self, value) -> None:
+        super().__init__(value, M=128, N=128)
+
+    def get_128_integer_bits_string(self):
+        return super().get_integer_bit_string()
+
+    def get_128_fraction_bits_string(self):
+        return super().get_fraction_bit_string()
