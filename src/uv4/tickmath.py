@@ -46,6 +46,7 @@ class TickMath:
         """
         sqrt_price = self.to_sqrt_price()
         return ceil(sqrt_price * Decimal("2") ** Decimal("96"))
+
     def from_price(self, price: Decimal) -> int:
         """Returns tick at price
 
