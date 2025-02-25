@@ -10,6 +10,7 @@ from .liquidity import (
     liquidity_y_from_sqrt_prices,
     percentage_slippage_to_tick_bounds,
 )
+from .fullmath import FullMath
 from .utils import (
     integer_to_binary_string,
 )
@@ -80,6 +81,15 @@ def main() -> None:
             <price> e.g 1.01 <rate> e.g 0.01
         """,
     )
+    parser.add_option(
+        "--mul-div",
+        type="string",
+        action="callback",
+        callback=get_values,
+        help="""get a * b / c
+            -t a,b,c
+        """,
+    )
     opts, args = parser.parse_args()
     if opts:
         d = opts.__dict__
@@ -111,13 +121,15 @@ def main() -> None:
         if d[liquidity]:
             values = [Decimal(i) for i in d[liquidity]]
             if values is not None:
-                print(f"{liquidity_y_from_prices(*values)}")
+                liq = liquidity_y_from_prices(*values)
+                print(f"0x{encode(['uint256'], [liq]).hex()}")
 
         liquidity = "liquidity_from_ticks"
         if d[liquidity]:
             values = [Decimal(i) for i in d[liquidity]]
             if values is not None:
-                print(f"{liquidity_y_from_ticks(*values)}")
+                liq = liquidity_y_from_ticks(*values)
+                print(f"0x{encode(['uint256'],[liq]).hex()}")
 
         ticks = "tick_bounds"
         if d[ticks]:
@@ -126,6 +138,14 @@ def main() -> None:
                 print(
                     f"{ticks}({values}) = {percentage_slippage_to_tick_bounds(*values)}"
                 )
+
+        mul_div = "mul_div"
+        if d[mul_div]:
+            values = [Decimal(i) for i in d[mul_div]]
+            if values is not None:
+                f = FullMath()
+                res = f.mul_div(*values)
+                print(f"0x{encode(['uint256'],[res]).hex()}")
 
 
 def get_values(option, opt, value, parser):
