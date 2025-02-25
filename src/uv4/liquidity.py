@@ -3,6 +3,27 @@ from decimal import Decimal
 from .tickmath import TickMath
 
 
+# (uint targetETH, uint targetUSDC) = LiquidityAmounts.getAmountsForLiquidity(current, lower, upper, liquidity);
+#
+# uint k = FullMath.mulDiv(targetETH, WAD, targetUSDC);
+#
+# Richard Tiutiun (Feb 21, 2025, 8:51 AM)
+# assume eth is X and usdc is Y...
+# our formula is (x - ky)/(1 + kp);
+#
+# we are selling X to buy Y, where
+# p is the price of eth, and the
+# derivation steps: assume n
+# is amount being swapped...
+#
+# (x - n)/(y + np) = k target
+# x - n = ky + knp
+# x - ky = n + knp
+# x - ky = n(1 + kp)
+#
+# liquidity = LiquidityAmounts.getLiquidityForAmount1(current, upper, eth);
+
+
 def liquidity_y_from_sqrt_prices(
     p: Decimal, x: Decimal, p_a: Decimal, p_b: Decimal
 ) -> Decimal:
