@@ -61,7 +61,6 @@ class TickMath:
         tick = self.from_price(price)
         return tick
 
-
     def from_sqrt_pricex96(self, sqrt_pricex96: int) -> int:
         sqrt_price = Decimal(str(sqrt_pricex96)) / (2**96)
         price = sqrt_price ** Decimal("2")
