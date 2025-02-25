@@ -1,12 +1,12 @@
 [project]
 name = "uv4"
-version = "0.1.1"
+version = "0.1.2"
 description = "python utilities for uniswap v4"
 readme = "README.md"
 authors = [
     { name = "Meek Msaki", email = "98189596+mmsaki@users.noreply.github.com" }
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "pytest-watcher>=0.4.3",
     "pytest>=8.3.4",
