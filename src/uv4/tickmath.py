@@ -23,7 +23,7 @@ class TickMath:
     def mix_usable_tick(self):
         return (self.MIN_TICK / self.tick_spacing) * self.tick_spacing
 
-    def to_price(self) -> Decimal:
+    def to_price(self, tick: int = 0) -> Decimal:
         """Returns price at tick
 
         price = 1.0001^tick
@@ -31,7 +31,10 @@ class TickMath:
         @params tick: int
         @return price: Decimal
         """
-        return self.base ** Decimal(str(self.tick))
+        if tick:
+            return self.base ** Decimal(str(tick))
+        else:
+            return self.base ** Decimal(str(self.tick))
 
     def to_sqrt_price(self) -> Decimal:
         price = self.to_price()
@@ -46,6 +49,7 @@ class TickMath:
         """
         sqrt_price = self.to_sqrt_price()
         return ceil(sqrt_price * Decimal("2") ** Decimal("96"))
+
     def from_price(self, price: Decimal) -> int:
         """Returns tick at price
 
@@ -60,7 +64,6 @@ class TickMath:
         price = sqrt_price ** Decimal("2")
         tick = self.from_price(price)
         return tick
-
 
     def from_sqrt_pricex96(self, sqrt_pricex96: int) -> int:
         sqrt_price = Decimal(str(sqrt_pricex96)) / (2**96)

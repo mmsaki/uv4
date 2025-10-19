@@ -26,7 +26,7 @@ class QNumber:
         assert value < 2**self.M
 
         self.value = Decimal(str(value))
-        self.q_number = eval(self.to_binary_string())
+        self.q_number = int(self.to_binary_string(), 2)
 
     def to_decimal(self) -> Decimal:
         """Converts Q64.96 integer fixed point to decimal
@@ -54,7 +54,7 @@ class QNumber:
         @return int
         """
 
-        q_number = eval(self.to_binary_string())
+        q_number = int(self.to_binary_string(), 2)
         assert int(self.value * 2**self.N) == q_number
 
         return q_number

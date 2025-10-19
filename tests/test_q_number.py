@@ -19,7 +19,7 @@ def q() -> Tuple[float, QNumber]:
 )
 def test_integer_bit_string(num, m, n):
     q = QNumber(num, m, n)
-    assert eval(f"0b{q.get_integer_bit_string()}") == int(num)
+    assert int(f"0b{q.get_integer_bit_string()}", 2) == int(num)
 
 
 @pytest.mark.parametrize(
