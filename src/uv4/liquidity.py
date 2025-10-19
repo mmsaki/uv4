@@ -3,6 +3,50 @@ from decimal import Decimal
 from .tickmath import TickMath
 
 
+class Liquidity:
+    def liquidity(self, x_virtual: Decimal, y_virtual: Decimal):
+        """liqudity"""
+        return Decimal(x_virtual * y_virtual).sqrt()
+
+    def l_x(self, p: Decimal, x: Decimal, pb: Decimal):
+        """liquidity of x reserves"""
+        return x * (p.sqrt() * pb.sqrt() / pb.sqrt() - p.sqrt())
+
+    def l_y(self, p: Decimal, y: Decimal, pa: Decimal):
+        """liquidity of y reserves"""
+        return y / (p.sqrt() - pa.sqrt())
+
+    def is_position_in_range(self, tick_lower: int, tick_upper: int, tick_current: int):
+        return tick_lower <= tick_current < tick_upper
+
+    def calculate_position_holdings(
+        self,
+        is_position_inrange: bool,
+        liquidity,
+        p: Decimal,
+        p_upper: Decimal,
+        p_lower: Decimal,
+    ):
+        token0, token1 = 0, 0
+        if is_position_inrange:
+            token0 = (
+                liquidity * (p_upper.sqrt() - p.sqrt()) / (p.sqrt() * p_upper.sqrt())
+            )
+            token1 = liquidity * (p.sqrt() - p_lower.sqrt())
+            return token0, token1
+        else:
+            if p <= p_lower:
+                token0 = (
+                    liquidity
+                    * (p_upper.sqrt() - p_lower.sqrt())
+                    / (p_lower.sqrt() * p_upper.sqrt())
+                )
+                return token0, token1
+            elif p_upper <= p:
+                token1 = liquidity * (p_upper.sqrt() - p_lower.sqrt())
+                return token0, token1
+
+
 def liquidity_y_from_sqrt_prices(
     p: Decimal, x: Decimal, p_a: Decimal, p_b: Decimal
 ) -> Decimal:
