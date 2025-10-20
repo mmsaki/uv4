@@ -1,6 +1,6 @@
 [project]
 name = "uv4"
-version = "0.1.3"
+version = "0.1.4"
 description = "python utilities for uniswap v4"
 readme = "README.md"
 authors = [
