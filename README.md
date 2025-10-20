@@ -89,10 +89,46 @@ True
 - [x] Amount of token0 outside range
 - [x] Amount of token1 outside range
 
+```py
+from uv4 import Liquidity
+
+liq = Liquidity()
+
+token0, token1 = liq.calculate_position_holdings(
+    position_liquidity,
+    price,
+    price_upper,
+    price_lower,
+)
+```
+
 ## LP Fees earned
 
 - [x] Amount of token0 in uncollected fees
 - [x] Amount of token1 in uncollected fees
+
+Example:
+
+```py
+from uv4 import Liquidity
+
+liq = Liquidity()
+
+fees0, fees1 = liq.calculate_uncollected_fees(
+    position_liquidity,
+    feeGrowthGlobal0,
+    feeGrowthGlobal1,
+    feeGrowthOutside0_l,
+    feeGrowthOutside0_u,
+    feeGrowthInside0,
+    feeGrowthOutside1_l,
+    feeGrowthOutside1_u,
+    feeGrowthInside1,
+    tick_lower,
+    tick_upper,
+    tick,
+)
+```
 
 ## 🧪 Run Tests
 
