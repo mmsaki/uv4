@@ -10,7 +10,7 @@ def liq():
 # https://app.uniswap.org/positions/v3/ethereum/37
 @pytest.mark.parametrize(
     (
-        "liquidity",
+        "position_liquidity",
         "feeGrowthGlobal0",
         "feeGrowthGlobal1",
         "feeGrowthOutside0_l",
@@ -42,7 +42,7 @@ def liq():
 )
 def test_position1v4_uncollected_fees(
     liq,
-    liquidity,
+    position_liquidity,
     feeGrowthGlobal0,
     feeGrowthGlobal1,
     feeGrowthOutside0_l,
@@ -56,7 +56,7 @@ def test_position1v4_uncollected_fees(
     tick,
 ):
     fees0, fees1 = liq.calculate_uncollected_fees(
-        liquidity,
+        position_liquidity,
         feeGrowthGlobal0,
         feeGrowthGlobal1,
         feeGrowthOutside0_l,

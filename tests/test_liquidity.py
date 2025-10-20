@@ -52,14 +52,14 @@ def test_position1v4(
     # position is not in range
     is_in_range = liq.is_position_in_range(tick_lower, tick_upper, tick)
     assert is_in_range
-    p = tm.to_price(tick)
-    p_u = tm.to_price(tick_upper)
-    p_l = tm.to_price(tick_lower)
+    price = tm.to_price(tick)
+    price_upper = tm.to_price(tick_upper)
+    price_lower = tm.to_price(tick_lower)
     token0, token1 = liq.calculate_position_holdings(
         liquidity,
-        p,
-        p_u,
-        p_l,
+        price,
+        price_upper,
+        price_lower,
     )
     assert token0 != 0
     assert token1 != 0

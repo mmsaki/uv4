@@ -21,10 +21,10 @@ class Liquidity:
 
     def calculate_position_holdings(
         self,
-        liquidity: Decimal,
-        p: Decimal,
-        p_upper: Decimal,
-        p_lower: Decimal,
+        position_liquidity: Decimal,
+        price: Decimal,
+        price_upper: Decimal,
+        price_lower: Decimal,
     ):
         """
         is_position_inrange - is position in range
@@ -34,28 +34,30 @@ class Liquidity:
         p_lower - the price of the lower bound tick
         """
         token0, token1 = 0, 0
-        is_in_range = p_lower <= p < p_upper
+        is_in_range = price_lower <= price < price_upper
         if is_in_range:
             token0 = (
-                liquidity * (p_upper.sqrt() - p.sqrt()) / (p.sqrt() * p_upper.sqrt())
+                position_liquidity
+                * (price_upper.sqrt() - price.sqrt())
+                / (price.sqrt() * price_upper.sqrt())
             )
-            token1 = liquidity * (p.sqrt() - p_lower.sqrt())
+            token1 = position_liquidity * (price.sqrt() - price_lower.sqrt())
             return token0, token1
         else:
-            if p <= p_lower:
+            if price <= price_lower:
                 token0 = (
-                    liquidity
-                    * (p_upper.sqrt() - p_lower.sqrt())
-                    / (p_lower.sqrt() * p_upper.sqrt())
+                    position_liquidity
+                    * (price_upper.sqrt() - price_lower.sqrt())
+                    / (price_lower.sqrt() * price_upper.sqrt())
                 )
-            if p_upper <= p:
-                token1 = liquidity * (p_upper.sqrt() - p_lower.sqrt())
+            if price_upper <= price:
+                token1 = position_liquidity * (price_upper.sqrt() - price_lower.sqrt())
 
             return token0, token1
 
     def calculate_uncollected_fees(
         self,
-        liquidity,
+        position_liquidity,
         feeGrowthGlobal0,
         feeGrowthGlobal1,
         feeGrowthOutside0_l,
@@ -86,8 +88,8 @@ class Liquidity:
         f0_r = feeGrowthGlobal0 - f0_b - f0_a
         f1_r = feeGrowthGlobal1 - f1_b - f1_a
 
-        fees0 = liquidity * ((f0_r - feeGrowthInside0) / 2**128)
-        fees1 = liquidity * ((f1_r - feeGrowthInside1) / 2**128)
+        fees0 = position_liquidity * ((f0_r - feeGrowthInside0) / 2**128)
+        fees1 = position_liquidity * ((f1_r - feeGrowthInside1) / 2**128)
         return fees0, fees1
 
 
