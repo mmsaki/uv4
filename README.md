@@ -1,13 +1,12 @@
 # UV4
 
-[![Publish](https://github.com/mmsaki/uv4/actions/workflows/release.yml/badge.svg)](https://github.com/mmsaki/uv4/actions/workflows/release.yml)
 ![PyPI - Version](https://img.shields.io/pypi/v/uv4)
-![test](https://github.com/mmsaki/uv4/actions/workflows/test.yml/badge.svg)
+
+[![Publish](https://github.com/mmsaki/uv4/actions/workflows/release.yml/badge.svg)](https://github.com/mmsaki/uv4/actions/workflows/release.yml)
+[![Tests](https://github.com/mmsaki/uv4/actions/workflows/test.yml/badge.svg)](https://github.com/mmsaki/uv4/actions/workflows/test.yml)
 [![codecov](https://codecov.io/github/mmsaki/uv4/graph/badge.svg?token=36PUOA0L5F)](https://codecov.io/github/mmsaki/uv4)
-![GitHub repo size](https://img.shields.io/github/repo-size/mmsaki/uv4)
 ![GitHub last commit](https://img.shields.io/github/last-commit/mmsaki/uv4)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/uv4)
-![GitHub top language](https://img.shields.io/github/languages/top/mmsaki/uv4)
 ![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/msakiart)
 
 Math utils for Uniswap v4.
