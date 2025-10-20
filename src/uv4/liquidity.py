@@ -56,17 +56,38 @@ class Liquidity:
     def calculate_uncollected_fees(
         self,
         liquidity,
-        feeGrowthGlobal,
-        f_r_u,
-        f_r_l,
-        feeGrowthInside,
-        tick_upper,
+        feeGrowthGlobal0,
+        feeGrowthGlobal1,
+        feeGrowthOutside0_l,
+        feeGrowthOutside0_u,
+        feeGrowthInside0,
+        feeGrowthOutside1_l,
+        feeGrowthOutside1_u,
+        feeGrowthInside1,
         tick_lower,
+        tick_upper,
         tick,
     ):
-        fees0, fees1 = 0, 0
+        f0_a, f0_b, f1_a, f1_b, fees0, fees1 = 0, 0, 0, 0, 0, 0
+        if tick >= tick_lower:
+            f0_b = feeGrowthOutside0_l
+            f1_b = feeGrowthOutside1_l
+        else:
+            f0_b = feeGrowthGlobal0 - feeGrowthOutside0_l
+            f1_b = feeGrowthGlobal1 - feeGrowthOutside1_l
 
-        # fees0 = liquidity * (f_r_l - ) / 2**128
+        if tick >= tick_upper:
+            f0_a = feeGrowthGlobal0 - feeGrowthOutside0_u
+            f1_a = feeGrowthGlobal1 - feeGrowthOutside1_u
+        else:
+            f0_a = feeGrowthOutside0_u
+            f1_a = feeGrowthOutside1_u
+
+        f0_r = feeGrowthGlobal0 - f0_b - f0_a
+        f1_r = feeGrowthGlobal1 - f1_b - f1_a
+
+        fees0 = liquidity * ((f0_r - feeGrowthInside0) / 2**128)
+        fees1 = liquidity * ((f1_r - feeGrowthInside1) / 2**128)
         return fees0, fees1
 
 
