@@ -16,9 +16,9 @@ def tm():
     return TickMath()
 
 
+# https://app.uniswap.org/positions/v3/ethereum/37
 @pytest.mark.parametrize(
     ("liquidity", "tick_lower", "tick_upper", "sqrt_price"),
-    # https://app.uniswap.org/positions/v3/ethereum/37
     [
         (10860507277202, 192180, 193380, 1906627091097897970122208862883908),
     ],
@@ -42,7 +42,6 @@ def test_position37v3(liq, tm, liquidity, tick_lower, tick_upper, sqrt_price):
 # https://app.uniswap.org/positions/v4/ethereum/1
 @pytest.mark.parametrize(
     ("liquidity", "tick_lower", "tick_upper", "sqrt_price"),
-    # https://app.uniswap.org/positions/v3/ethereum/37
     [
         (555103547015, -887270, 887270, 1260437594239115943190250841240651),
     ],
