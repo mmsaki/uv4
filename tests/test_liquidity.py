@@ -29,9 +29,9 @@ def test_position37v3(
     assert not is_in_range
     token0, token1 = liq.calculate_position_holdings(
         liquidity,
-        TickMath().to_price(tick),
-        TickMath().to_price(tick_upper),
-        TickMath().to_price(tick_lower),
+        tm.to_price(tick),
+        tm.to_price(tick_upper),
+        tm.to_price(tick_lower),
     )
     assert token0 == 0
     assert token1 != 0
@@ -52,9 +52,9 @@ def test_position1v4(
     # position is not in range
     is_in_range = liq.is_position_in_range(tick_lower, tick_upper, tick)
     assert is_in_range
-    p = TickMath().to_price(tick)
-    p_u = TickMath().to_price(tick_upper)
-    p_l = TickMath().to_price(tick_lower)
+    p = tm.to_price(tick)
+    p_u = tm.to_price(tick_upper)
+    p_l = tm.to_price(tick_lower)
     token0, token1 = liq.calculate_position_holdings(
         liquidity,
         p,
@@ -81,9 +81,9 @@ def test_position1v4_uncollected_fees(
     # position is not in range
     is_in_range = liq.is_position_in_range(tick_lower, tick_upper, tick)
     assert is_in_range
-    p = TickMath().to_price(tick)
-    p_u = TickMath().to_price(tick_upper)
-    p_l = TickMath().to_price(tick_lower)
+    p = tm.to_price(tick)
+    p_u = tm.to_price(tick_upper)
+    p_l = tm.to_price(tick_lower)
     token0, token1 = liq.calculate_position_holdings(
         liquidity,
         p,
