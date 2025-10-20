@@ -1,6 +1,5 @@
 import optparse
-from decimal import Decimal
-
+from decimal import Decimal, getcontext
 from .hook import Hook
 from .q_number import QNumber, Q6496, Q128128
 from .tickmath import TickMath
@@ -9,12 +8,14 @@ from .liquidity import (
     liquidity_y_from_ticks,
     liquidity_y_from_sqrt_prices,
     percentage_slippage_to_tick_bounds,
+    Liquidity,
 )
 from .utils import (
     integer_to_binary_string,
 )
 from eth_abi.abi import encode
 
+getcontext().prec = 96
 
 __all__ = [
     "Hook",
@@ -22,7 +23,7 @@ __all__ = [
     "QNumber",
     "Q6496",
     "Q128128",
-    "FullMath",
+    "Liquidity",
     "integer_to_binary_string",
     "liquidity_y_from_prices",
     "liquidity_y_from_ticks",

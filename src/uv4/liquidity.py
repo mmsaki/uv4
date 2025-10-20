@@ -1,6 +1,9 @@
 from typing import Tuple
-from decimal import Decimal
+from decimal import Decimal, getcontext
 from .tickmath import TickMath
+
+
+getcontext().prec = 96
 
 
 class Liquidity:
@@ -22,11 +25,18 @@ class Liquidity:
     def calculate_position_holdings(
         self,
         is_position_inrange: bool,
-        liquidity,
+        liquidity: Decimal,
         p: Decimal,
         p_upper: Decimal,
         p_lower: Decimal,
     ):
+        """
+        is_position_inrange - is position in range
+        liquidity - the liquidity in the pool
+        p - the current price
+        p_upper - the price of the upper bound tick
+        p_lower - the price of the lower bound tick
+        """
         token0, token1 = 0, 0
         if is_position_inrange:
             token0 = (
