@@ -1,6 +1,6 @@
 # UV4
 
-![PyPI - Version](https://img.shields.io/pypi/v/uv4)
+[![PyPI - Version](https://img.shields.io/pypi/v/uv4?style=flat&color=31C854)](https://github.com/mmsaki/uv4/releases)
 [![Publish](https://github.com/mmsaki/uv4/actions/workflows/release.yml/badge.svg)](https://github.com/mmsaki/uv4/actions/workflows/release.yml)
 [![Tests](https://github.com/mmsaki/uv4/actions/workflows/test.yml/badge.svg)](https://github.com/mmsaki/uv4/actions/workflows/test.yml)
 ![GitHub last commit](https://img.shields.io/github/last-commit/mmsaki/uv4)
