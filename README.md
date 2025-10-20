@@ -89,10 +89,18 @@ True
 - [x] Amount of token0 outside range
 - [x] Amount of token1 outside range
 
+Usage:
+
 ```py
 from uv4 import Liquidity
 
 liq = Liquidity()
+
+# https://app.uniswap.org/positions/v4/ethereum/1
+position_liquidity = 555103547015
+tick_lower = -887270
+tick_upper = 887270
+sqrt_price = 1260437594239115943190250841240651
 
 token0, token1 = liq.calculate_position_holdings(
     position_liquidity,
@@ -102,17 +110,36 @@ token0, token1 = liq.calculate_position_holdings(
 )
 ```
 
+Result:
+
+- token0 = 34893259 / 10^6 or ~$34.89 USDC
+- token1 = 8830930485638544 / 10^18 or ~0.0088 ETH
+
 ## LP Fees earned
 
 - [x] Amount of token0 in uncollected fees
 - [x] Amount of token1 in uncollected fees
 
-Example:
+Usage:
 
 ```py
 from uv4 import Liquidity
 
 liq = Liquidity()
+
+# example position https://app.uniswap.org/positions/v3/ethereum/37
+position_liquidity = 10860507277202
+feeGrowthGlobal0 = 5247194057753078598628514306485795
+feeGrowthGlobal1 = 2233111119924828986464996298702686253189413
+feeGrowthOutside0_lower = 96197287712989292312469866057737
+feeGrowthOutside0_upper = 437757860306982806877467479294063
+feeGrowthInside0 = 0
+feeGrowthOutside1_lower = 20741530393032227016498669306435785133483
+feeGrowthOutside1_upper = 101747371833570761666428696605043869042568
+feeGrowthInside1 = 0
+tick_lower = 192180
+tick_upper = 193380
+tick = 193397
 
 fees0, fees1 = liq.calculate_uncollected_fees(
     position_liquidity,
@@ -129,6 +156,11 @@ fees0, fees1 = liq.calculate_uncollected_fees(
     tick,
 )
 ```
+
+Result:
+
+- fees0 = `10901302` / 10^6 or ~$10.90 USDC
+- fees1 = `2585395589026349` / 10^18 or ~0.003 ETH
 
 ## 🧪 Run Tests
 
