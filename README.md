@@ -6,7 +6,7 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/mmsaki/uv4)
 [![codecov](https://codecov.io/github/mmsaki/uv4/graph/badge.svg?token=36PUOA0L5F)](https://codecov.io/github/mmsaki/uv4)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/uv4)
-![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/msakiart)
+[![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/msakiart)](https://x.com/intent/follow?screen_name=msakiart)
 
 Math utils for Uniswap v4.
 
