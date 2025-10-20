@@ -1,9 +1,6 @@
 from typing import Tuple
-from decimal import Decimal, getcontext
+from decimal import Decimal
 from .tickmath import TickMath
-
-
-getcontext().prec = 96
 
 
 class Liquidity:
@@ -55,6 +52,22 @@ class Liquidity:
                 token1 = liquidity * (p_upper.sqrt() - p_lower.sqrt())
 
             return token0, token1
+
+    def calculate_uncollected_fees(
+        self,
+        liquidity,
+        feeGrowthGlobal,
+        f_r_u,
+        f_r_l,
+        feeGrowthInside,
+        tick_upper,
+        tick_lower,
+        tick,
+    ):
+        fees0, fees1 = 0, 0
+
+        # fees0 = liquidity * (f_r_l - ) / 2**128
+        return fees0, fees1
 
 
 def liquidity_y_from_sqrt_prices(

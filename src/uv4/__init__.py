@@ -1,5 +1,5 @@
 import optparse
-from decimal import Decimal, getcontext
+from decimal import Decimal
 from .hook import Hook
 from .q_number import QNumber, Q6496, Q128128
 from .tickmath import TickMath
@@ -14,8 +14,6 @@ from .utils import (
     integer_to_binary_string,
 )
 from eth_abi.abi import encode
-
-getcontext().prec = 96
 
 __all__ = [
     "Hook",
