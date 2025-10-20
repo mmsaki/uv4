@@ -114,12 +114,19 @@ token0, token1 = liq.calculate_position_holdings(
     price_upper,
     price_lower,
 )
+print("token0 amount == ", round(token0 / 10**6, 4), "USDC")
+print("token1 amount == ", round(token1 / 10**18, 4), "ETH")
 ```
 
 Result:
 
-- token0 = 34893259 / 10^6 or ~$34.89 USDC
-- token1 = 8830930485638544 / 10^18 or ~0.0088 ETH
+```txt
+token0 amount ==  34.8933 USDC
+token1 amount ==  0.0088 ETH
+```
+
+- `token0` = $34.89 USDC
+- `token1` = 0.0088 ETH
 
 ## LP Fees earned
 
@@ -161,12 +168,19 @@ fees0, fees1 = liq.calculate_uncollected_fees(
     tick_upper,
     tick,
 )
+print("fees0 == ", round(fees0 / 10**6, 4), "USDC")
+print("fees1 == ", round(fees1 / 10**18, 4), "ETH")
 ```
 
 Result:
 
-- fees0 = `10901302` / 10^6 or ~$10.90 USDC
-- fees1 = `2585395589026349` / 10^18 or ~0.003 ETH
+```txt
+fees0 ==  10.9013 USDC
+fees1 ==  0.0026 ETH
+```
+
+- `fees0` = $10.90 USDC
+- `fees1` = 0.0026 ETH
 
 ## 🧪 Run Tests
 
