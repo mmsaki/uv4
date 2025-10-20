@@ -82,6 +82,18 @@ False
 True
 ```
 
+## Liquidity amounts within and outside range
+
+- [x] Amount of token0 within range
+- [x] Amount of token1 within range
+- [x] Amount of token0 outside range
+- [x] Amount of token1 outside range
+
+## LP Fees earned
+
+- [x] Amount of token0 in uncollected fees
+- [x] Amount of token1 in uncollected fees
+
 ## 🧪 Run Tests
 
 Dependencies:
