@@ -51,10 +51,10 @@ class Liquidity:
                     * (p_upper.sqrt() - p_lower.sqrt())
                     / (p_lower.sqrt() * p_upper.sqrt())
                 )
-                return token0, token1
-            elif p_upper <= p:
+            if p_upper <= p:
                 token1 = liquidity * (p_upper.sqrt() - p_lower.sqrt())
-                return token0, token1
+
+            return token0, token1
 
 
 def liquidity_y_from_sqrt_prices(
