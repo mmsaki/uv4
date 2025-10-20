@@ -21,7 +21,6 @@ class Liquidity:
 
     def calculate_position_holdings(
         self,
-        is_position_inrange: bool,
         liquidity: Decimal,
         p: Decimal,
         p_upper: Decimal,
@@ -35,7 +34,8 @@ class Liquidity:
         p_lower - the price of the lower bound tick
         """
         token0, token1 = 0, 0
-        if is_position_inrange:
+        is_in_range = p_lower <= p < p_upper
+        if is_in_range:
             token0 = (
                 liquidity * (p_upper.sqrt() - p.sqrt()) / (p.sqrt() * p_upper.sqrt())
             )
