@@ -1,6 +1,5 @@
-from typing import Tuple
 import pytest
-
+from typing import Tuple
 from uv4.q_number import QNumber
 
 

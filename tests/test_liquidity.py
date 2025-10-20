@@ -1,5 +1,5 @@
-from uv4.liquidity import Liquidity
 import pytest
+from uv4.liquidity import Liquidity
 from uv4.tickmath import TickMath
 
 
