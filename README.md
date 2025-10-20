@@ -92,15 +92,21 @@ True
 Usage:
 
 ```py
-from uv4 import Liquidity
+from uv4 import Liquidity, TickMath
 
 liq = Liquidity()
+tm = TickMath()
 
 # https://app.uniswap.org/positions/v4/ethereum/1
 position_liquidity = 555103547015
 tick_lower = -887270
 tick_upper = 887270
 sqrt_price = 1260437594239115943190250841240651
+
+tick = tm.from_sqrt_pricex96(sqrt_price)
+price = tm.to_price(tick)
+price_upper = tm.to_price(tick_upper)
+price_lower = tm.to_price(tick_lower)
 
 token0, token1 = liq.calculate_position_holdings(
     position_liquidity,
