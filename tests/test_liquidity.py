@@ -34,6 +34,7 @@ def test_position37v3(
         TickMath().to_price(tick_lower),
     )
     assert token0 == 0
+    assert token1 != 0
     assert int(token1) == 9999999999999133
 
 
