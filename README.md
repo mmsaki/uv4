@@ -190,5 +190,7 @@ Dependencies:
 Run command
 
 ```sh
-ptw .
+pytest -s -v --no-header
+# or
+ptw . -s -v --no-header
 ```
