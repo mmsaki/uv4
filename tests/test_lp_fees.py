@@ -40,7 +40,7 @@ def liq():
         ),
     ],
 )
-def test_position1v4_uncollected_fees(
+def test_position37v3_uncollected_fees(
     liq,
     position_liquidity,
     feeGrowthGlobal0,
