@@ -1,6 +1,6 @@
 import pytest
 from typing import Tuple
-from uv4.q_number import QNumber
+from uv4.q_number import QNumber, Q6496, Q128128
 
 
 @pytest.fixture
@@ -78,3 +78,19 @@ def test_q_number_to_decimal(num, m, n, expected):
 )
 def test_q_number_fails_initiaze_larger_integer_than_possible(num, m, n):
     QNumber(num, m, n)
+
+
+def test_q6496():
+    q = Q6496(1.0001)
+    assert q.M == 64
+    assert q.N == 96
+    assert q.get_64_bits_string() == q.get_integer_bit_string()
+    assert q.get_96_bits_string() == q.get_fraction_bit_string()
+
+
+def test_q128128():
+    q = Q128128(1.0001)
+    assert q.M == 128
+    assert q.N == 128
+    assert q.get_128_integer_bits_string() == q.get_integer_bit_string()
+    assert q.get_128_fraction_bits_string() == q.get_fraction_bit_string()

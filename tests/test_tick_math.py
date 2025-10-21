@@ -52,3 +52,23 @@ def test_get_tick_from_sqrtx96(tickmath):
     #     tickmath.from_sqrt_pricex96(1461373636630004318706518188784493106690254656249)
     #     == 887272
     # )
+
+
+def test_max_usable_tick(tickmath):
+    assert tickmath.max_usable_tick() == tickmath.MAX_TICK
+
+
+def test_min_usable_tick(tickmath):
+    assert tickmath.mix_usable_tick() == tickmath.MIN_TICK
+
+
+def test_price_to_sqrtpricex96(tickmath):
+    price = Decimal("1")
+    expected = int(price.sqrt() * Decimal("2") ** Decimal("96"))
+    assert tickmath.price_to_sqrtpricex96(price) == expected
+
+
+def test_price_from_sqrtpricex96(tickmath):
+    sqrt_price = 79228162514264337593543950336
+    expected = Decimal(sqrt_price / 2**96) ** 2
+    assert tickmath.price_from_sqrtpricex96(sqrt_price) == expected
