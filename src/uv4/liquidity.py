@@ -27,11 +27,10 @@ class Liquidity:
         price_lower: Decimal,
     ):
         """
-        is_position_inrange - is position in range
-        liquidity - the liquidity in the pool
-        p - the current price
-        p_upper - the price of the upper bound tick
-        p_lower - the price of the lower bound tick
+        position_liquidity - the liquidity of user's position
+        price - the current price of pool
+        price_upper - the price of the upper bound tick of user's position
+        price_lower - the price of the lower bound tick of user's position
         """
         token0, token1 = 0, 0
         is_in_range = price_lower <= price < price_upper
