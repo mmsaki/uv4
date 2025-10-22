@@ -17,7 +17,7 @@ def k():
     ],
 )
 def test_clvr(k, current_tick, ticks):
-    acummulator = 0
+    accumulator = 0
     assert k < len(ticks)
     for i in range(k, len(ticks)):
         a = 0
@@ -28,8 +28,8 @@ def test_clvr(k, current_tick, ticks):
             a = ticks[i - k]
         diff = b - a
         diff_sqrd = diff**2
-        acummulator += diff_sqrd
+        accumulator += diff_sqrd
 
-    print("\ncumm", acummulator)
-    volatility = acummulator / (len(ticks) - k)
+    print("\ncumm", accumulator)
+    volatility = accumulator / (len(ticks) - k)
     print("volatility", volatility)
