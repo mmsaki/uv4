@@ -117,7 +117,7 @@ def test_order(orders, amount):
     #     - Determines how easy it is to insert orders
     #     - To calculate insertions, how to solve this?
     #   - validate how algorithm picks transactions
-    def validate(buys, sells, c=0):
+    def validate(buys, sells, cumulative=0):
         # assert buys and sells are sorted
 
         if len(buys) + len(sells) == 0:
@@ -146,14 +146,14 @@ def test_order(orders, amount):
             else:
                 return
             if zeroForOne:
-                c += amount
+                cumulative += amount
                 buys = buys[i + 1 :]
             else:
-                c -= amount
+                cumulative -= amount
                 sells = sells[i + 1 :]
-            print(c)
+            print(cumulative)
 
-            if c > 0:
+            if cumulative > 0:
                 if sells:
                     order = sells[0]
                     assert not order[0]
