@@ -142,14 +142,14 @@ def test_order(orders, amount):
         i = 0
         while order:
             if order:
-                z, a = order
+                zeroForOne, amount = order
             else:
                 return
-            if z:
-                c += a
+            if zeroForOne:
+                c += amount
                 buys = buys[i + 1 :]
             else:
-                c -= a
+                c -= amount
                 sells = sells[i + 1 :]
             print(c)
 
