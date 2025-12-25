@@ -123,26 +123,26 @@ def test_order(orders, amount):
         if len(buys) + len(sells) == 0:
             return
 
-        o = None
+        order = None
         if not buys:
             if sells:
-                o = sells[0]
+                order = sells[0]
                 assert not sells[0][0]
         if not sells:
             if buys:
-                o = buys[0]
+                order = buys[0]
                 assert buys[0][0]
 
         if buys and sells:
             if buys[0][1] < sells[0][1]:
-                o = buys[0]
+                order = buys[0]
             else:
-                o = sells[0]
+                order = sells[0]
 
         i = 0
-        while o:
-            if o:
-                z, a = o
+        while order:
+            if order:
+                z, a = order
             else:
                 return
             if z:
@@ -155,21 +155,21 @@ def test_order(orders, amount):
 
             if c > 0:
                 if sells:
-                    o = sells[0]
-                    assert not o[0]
+                    order = sells[0]
+                    assert not order[0]
                 else:
                     if buys:
-                        o = buys[0]
-                        assert o[0]
+                        order = buys[0]
+                        assert order[0]
                     return
             else:
                 if buys:
-                    o = buys[0]
-                    assert o[0]
+                    order = buys[0]
+                    assert order[0]
                 else:
                     if sells:
-                        o = sells[0]
-                        assert not o[0]
+                        order = sells[0]
+                        assert not order[0]
                     else:
                         return
 
