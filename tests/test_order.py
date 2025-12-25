@@ -113,13 +113,14 @@ def test_order(orders, amount):
     #   - make it easy to sort
     #   - make it easy to verify sort
     #   - make it hard to insert
-    #   - If you can make it hard to calculate inser
-    #     - computationally infiseable
-    #     - to calculate insrtions
+    #   - What is the computation of order insertions
+    #     - Determines how easy it is to insert orders
+    #     - To calculate insertions, how to solve this?
+    #   - validate how algorithm picks transactions
     def validate(buys, sells, dir=None, c=0):
         # assert buys and sells are sorted
 
-        if len(orders) == 0:
+        if len(buys) + len(sells) == 0:
             return
 
         o = None
