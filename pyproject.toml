@@ -13,6 +13,7 @@ dependencies = [
     "ipython>=8.18.1",
     "pytest-cov>=6.0.0",
     "eth-abi>=5.2.0",
+    "numpy>=2.0.2",
 ]
 
 [project.urls]
