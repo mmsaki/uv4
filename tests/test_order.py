@@ -140,6 +140,7 @@ def test_order(orders, amount):
                 order = sells[0]
 
         while order:
+            # 1. process current order
             zeroForOne, amount = order
 
             if zeroForOne:
@@ -150,6 +151,7 @@ def test_order(orders, amount):
                 sells = sells[1:]
             print(cumulative)
 
+            # 2. pick next order
             if cumulative > 0:
                 if sells:
                     order = sells[0]
