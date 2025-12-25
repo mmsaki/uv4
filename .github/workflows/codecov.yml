@@ -10,5 +10,5 @@ coverage:
         flags: 
           - src
         paths: 
-          - src/
+          - src/uv4
         removed_code_behavior: off #removals_only, fully_covered_patch, adjust_base",
