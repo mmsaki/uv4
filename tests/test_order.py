@@ -4,7 +4,7 @@ import pytest
 # zeroForOne == True => Selling token zero
 # zeroForOne == False => Buying token zero
 @pytest.mark.parametrize(
-    ("orders", "failure"),
+    ("orders", "amount"),
     # intial price p0, top of block, the previous p n - k
     # define the picking methodology.
     # - previous direction
@@ -104,7 +104,7 @@ import pytest
         # ),
     ],
 )
-def test_order(orders, failure):
+def test_order(orders, amount):
     # NOTE: In an adverserial setting, a user can
     #       - insert transactions /
     #       - sandwich orders.
