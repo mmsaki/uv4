@@ -3,5 +3,12 @@ coverage:
     project:
       default:
         target: auto
-        threshold: 0%
+        threshold: 5%
         base: auto 
+        if_ci_failed: error #success, failure, error, ignore
+        only_pulls: false
+        flags: 
+          - src
+        paths: 
+          - src/
+        removed_code_behavior: off #removals_only, fully_covered_patch, adjust_base",
