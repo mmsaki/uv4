@@ -139,18 +139,15 @@ def test_order(orders, amount):
             else:
                 order = sells[0]
 
-        i = 0
         while order:
-            if order:
-                zeroForOne, amount = order
-            else:
-                return
+            zeroForOne, amount = order
+
             if zeroForOne:
                 cumulative += amount
-                buys = buys[i + 1 :]
+                buys = buys[1:]
             else:
                 cumulative -= amount
-                sells = sells[i + 1 :]
+                sells = sells[1:]
             print(cumulative)
 
             if cumulative > 0:
