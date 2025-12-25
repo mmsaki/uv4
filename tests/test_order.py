@@ -117,7 +117,7 @@ def test_order(orders, amount):
     #     - Determines how easy it is to insert orders
     #     - To calculate insertions, how to solve this?
     #   - validate how algorithm picks transactions
-    def validate(buys, sells, dir=None, c=0):
+    def validate(buys, sells, c=0):
         # assert buys and sells are sorted
 
         if len(buys) + len(sells) == 0:
