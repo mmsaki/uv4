@@ -5,11 +5,11 @@ import pytest
 # zeroForOne == False => Buying token zero
 @pytest.mark.parametrize(
     ("orders", "amount"),
-    # intial price p0, top of block, the previous p n - k
+    # initial price p0, top of block, the previous p n - k
     # define the picking methodology.
     # - previous direction
     # - previous amount
-    # - cummulative values
+    # - cumulative values
     [
         (
             [
@@ -105,10 +105,10 @@ import pytest
     ],
 )
 def test_order(orders, amount):
-    # NOTE: In an adverserial setting, a user can
+    # NOTE: In an adversarial setting, a user can
     #       - insert transactions /
     #       - sandwich orders.
-    #       - Backrun transction
+    #       - Backrun transaction
     # Suggestion:
     #   - make it easy to sort
     #   - make it easy to verify sort
@@ -119,6 +119,10 @@ def test_order(orders, amount):
     #   - validate how algorithm picks transactions
     def validate(buys, sells, cumulative=0):
         # assert buys and sells are sorted
+        for i in range(1, len(buys)):
+            assert buys[i - 1][1] <= buys[i][1]
+        for i in range(1, len(sells)):
+            assert sells[i - 1][1] <= sells[i][1]
 
         if len(buys) + len(sells) == 0:
             return
