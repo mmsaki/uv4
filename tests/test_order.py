@@ -176,5 +176,56 @@ def test_order(orders, amount):
                     else:
                         return
 
+    def pick_order(sells, buys, cumulative):
+        order = None
+        if not buys:
+            if sells:
+                order = sells[0]
+                assert not sells[0][0]
+        if not sells:
+            if buys:
+                order = buys[0]
+                assert buys[0][0]
+
+        if buys and sells:
+            if buys[0][1] < sells[0][1]:
+                order = buys[0]
+            else:
+                order = sells[0]
+
+        while order:
+            # 1. process current order
+            zeroForOne, amount = order
+
+            if zeroForOne:
+                cumulative += amount
+                buys = buys[1:]
+            else:
+                cumulative -= amount
+                sells = sells[1:]
+            print(cumulative)
+
+            # 2. pick next order
+            if cumulative > 0:
+                if sells:
+                    order = sells[0]
+                    assert not order[0]
+                else:
+                    if buys:
+                        order = buys[0]
+                        assert order[0]
+                    return
+            else:
+                if buys:
+                    order = buys[0]
+                    assert order[0]
+                else:
+                    if sells:
+                        order = sells[0]
+                        assert not order[0]
+                    else:
+                        return
+        pass
+
     (buys, sells) = orders
     validate(buys, sells)
