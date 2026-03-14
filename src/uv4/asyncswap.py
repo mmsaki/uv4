@@ -1,5 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
+from decimal import Decimal, getcontext
 
 from .async_accounting import (
     AsyncOrderAccounting,
@@ -8,7 +9,13 @@ from .async_accounting import (
 )
 from .async_accounting import partial_fill as partial_fill_accounting
 from .async_accounting import cancel_order as cancel_order_accounting
-from .swap import compute_amount_from_tick
+from .swap import (
+    compute_amount_from_tick,
+    price_from_sqrt_price_x96,
+    sqrt_price_x96_from_tick,
+)
+
+getcontext().prec = 80
 
 
 class AsyncSwapError(ValueError):
@@ -18,6 +25,21 @@ class AsyncSwapError(ValueError):
 class FeeMode:
     UPFRONT = "upfront"
     ON_FILL = "on_fill"
+
+
+@dataclass(frozen=True)
+class OracleQuote:
+    tick: int
+    updated_at: int
+
+
+@dataclass(frozen=True)
+class OracleConfig:
+    max_deviation_bps: int
+    max_age_seconds: int
+    user_capture_bps: int = 5_000
+    filler_capture_bps: int = 2_500
+    protocol_capture_bps: int = 2_500
 
 
 @dataclass(frozen=True)
@@ -157,6 +179,92 @@ class AsyncSwap:
         self.protocol_fees: dict[str, int] = defaultdict(int)
         self.native_balances: dict[str, int] = defaultdict(int)
         self.erc20_balances: dict[tuple[str, str], int] = defaultdict(int)
+        self.oracle_quotes: dict[str, OracleQuote] = {}
+        self.oracle_configs: dict[str, OracleConfig] = {}
+        self.current_time = 0
+        self.protocol_surplus: dict[str, int] = defaultdict(int)
+
+    def warp(self, timestamp: int) -> None:
+        self.current_time = timestamp
+
+    def set_oracle_quote(
+        self, pool_id: str, tick: int, updated_at: int | None = None
+    ) -> None:
+        self.oracle_quotes[pool_id] = OracleQuote(
+            tick=tick,
+            updated_at=self.current_time if updated_at is None else updated_at,
+        )
+
+    def set_oracle_config(
+        self,
+        pool_id: str,
+        max_deviation_bps: int,
+        max_age_seconds: int,
+        user_capture_bps: int = 5_000,
+        filler_capture_bps: int = 2_500,
+        protocol_capture_bps: int = 2_500,
+    ) -> None:
+        self.oracle_configs[pool_id] = OracleConfig(
+            max_deviation_bps=max_deviation_bps,
+            max_age_seconds=max_age_seconds,
+            user_capture_bps=user_capture_bps,
+            filler_capture_bps=filler_capture_bps,
+            protocol_capture_bps=protocol_capture_bps,
+        )
+
+    @staticmethod
+    def _price_at_tick(tick: int) -> Decimal:
+        sqrt_price_x96 = sqrt_price_x96_from_tick(tick)
+        return price_from_sqrt_price_x96(sqrt_price_x96)
+
+    def _oracle_deviation_bps(self, user_tick: int, oracle_tick: int) -> int:
+        user_price = self._price_at_tick(user_tick)
+        oracle_price = self._price_at_tick(oracle_tick)
+        if oracle_price == 0:
+            raise AsyncSwapError("INVALID_ORACLE_PRICE")
+        deviation = abs(user_price - oracle_price) / oracle_price
+        return int(deviation * Decimal(10_000))
+
+    def _oracle_capture_adjustment(
+        self,
+        order: Order,
+        key: PoolKey,
+        zero_for_one: bool,
+        fill_amount: int,
+        gross_input_share: int,
+        filler_share: int,
+    ) -> tuple[int, int, int]:
+        """Return (user_rebate, adjusted_filler_share, protocol_surplus_capture).
+
+        No-revert policy: if oracle data is missing/stale, skip capture and leave the fill unchanged.
+        Surplus is only captured when the user's quoted price is meaningfully worse than the oracle.
+        """
+        config = self.oracle_configs.get(key.pool_id)
+        quote = self.oracle_quotes.get(key.pool_id)
+        if config is None or quote is None:
+            return 0, filler_share, 0
+        if self.current_time - quote.updated_at > config.max_age_seconds:
+            return 0, filler_share, 0
+
+        deviation_bps = self._oracle_deviation_bps(order.tick, quote.tick)
+        if deviation_bps <= config.max_deviation_bps:
+            return 0, filler_share, 0
+
+        oracle_amount_in, _ = compute_amount_from_tick(
+            quote.tick, fill_amount, zero_for_one
+        )
+        fair_share = oracle_amount_in
+        if self.fee_mode == FeeMode.ON_FILL:
+            fair_share -= fee_amount_from_input(oracle_amount_in, key.fee)
+        if fair_share >= filler_share:
+            return 0, filler_share, 0
+
+        surplus = filler_share - fair_share
+        user_take = (surplus * config.user_capture_bps) // 10_000
+        filler_bonus = (surplus * config.filler_capture_bps) // 10_000
+        protocol_take = (surplus * config.protocol_capture_bps) // 10_000
+        adjusted_filler = fair_share + filler_bonus
+        return user_take, adjusted_filler, protocol_take
 
     def before_initialize(self, sender: str, key: PoolKey) -> None:
         if sender != self.protocol_owner:
@@ -312,15 +420,23 @@ class AsyncSwap:
                 raise AsyncSwapError("INVALID_NATIVE_OUTPUT_VALUE")
             self.erc20_balances[(order.swapper, output_currency)] += fill_amount
 
-        self.balances_out[balances_key] = remaining_out - fill_amount
-        self.balances_in[balances_key] = remaining_in - gross_input_share
-
         if self.fee_mode == FeeMode.UPFRONT:
             filler_share = gross_input_share
         else:
             fee_share = fee_amount_from_input(gross_input_share, key.fee)
             filler_share = gross_input_share - fee_share
             self.protocol_fees[self.input_currency(zero_for_one)] += fee_share
+
+        user_rebate, filler_share, protocol_surplus = self._oracle_capture_adjustment(
+            order, key, zero_for_one, fill_amount, gross_input_share, filler_share
+        )
+
+        self.balances_out[balances_key] = remaining_out - fill_amount
+        self.balances_in[balances_key] = remaining_in - (
+            gross_input_share - user_rebate
+        )
+        if protocol_surplus > 0:
+            self.protocol_surplus[self.input_currency(zero_for_one)] += protocol_surplus
 
         self.pool_manager.transfer(
             self.hook_address, filler, self.input_currency(zero_for_one), filler_share

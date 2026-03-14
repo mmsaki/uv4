@@ -367,3 +367,166 @@ def test_fee_mode_invariant_on_fill_half_fill(token_pool_key):
     assert filler_share == 494_000_000_000_000_000
     assert refundable_remainder == 500_000_000_000_000_000
     assert filled_fee + filler_share + refundable_remainder == ONE
+
+
+def test_oracle_guard_allows_fill_within_deviation(token_pool_key):
+    model = AsyncSwap(fee_ppm=12_000)
+    model.initialize_pool(token_pool_key)
+    model.warp(1_000)
+    model.set_oracle_config("pool-1", max_deviation_bps=100, max_age_seconds=300)
+    model.set_oracle_quote("pool-1", tick=0)
+
+    order = model.swap(
+        token_pool_key,
+        user="alice",
+        zero_for_one=True,
+        amount_in=ONE,
+        tick=5,
+        min_amount_out=0,
+    )
+
+    fill_amount = model.get_balance_out(order, True)
+    filler_share = model.fill(order, True, fill_amount, filler="bob")
+
+    assert filler_share == 988_000_000_000_000_000
+    assert model.protocol_surplus["token0"] == 0
+
+
+def test_oracle_capture_reduces_filler_share_when_quote_is_bad(token_pool_key):
+    model = AsyncSwap(fee_ppm=12_000)
+    model.initialize_pool(token_pool_key)
+    model.warp(1_000)
+    model.set_oracle_config(
+        "pool-1",
+        max_deviation_bps=50,
+        max_age_seconds=300,
+        user_capture_bps=5_000,
+        filler_capture_bps=2_500,
+        protocol_capture_bps=2_500,
+    )
+    model.set_oracle_quote("pool-1", tick=0)
+
+    order = model.swap(
+        token_pool_key,
+        user="alice",
+        zero_for_one=True,
+        amount_in=ONE,
+        tick=-500,
+        min_amount_out=0,
+    )
+
+    filler_share = model.fill(
+        order, True, model.get_balance_out(order, True), filler="bob"
+    )
+
+    assert filler_share < 988_000_000_000_000_000
+    assert model.protocol_surplus["token0"] > 0
+    assert model.get_balance_in(order, True) > 0
+
+
+def test_oracle_stale_quote_skips_capture_instead_of_reverting(token_pool_key):
+    model = AsyncSwap(fee_ppm=12_000)
+    model.initialize_pool(token_pool_key)
+    model.warp(1_000)
+    model.set_oracle_config("pool-1", max_deviation_bps=100, max_age_seconds=60)
+    model.set_oracle_quote("pool-1", tick=0, updated_at=900)
+    model.warp(1_000)
+
+    order = model.swap(
+        token_pool_key,
+        user="alice",
+        zero_for_one=True,
+        amount_in=ONE,
+        tick=0,
+        min_amount_out=0,
+    )
+
+    filler_share = model.fill(
+        order, True, model.get_balance_out(order, True), filler="bob"
+    )
+    assert filler_share == 988_000_000_000_000_000
+    assert model.protocol_surplus["token0"] == 0
+
+
+def test_oracle_missing_quote_skips_capture_instead_of_reverting(token_pool_key):
+    model = AsyncSwap(fee_ppm=12_000)
+    model.initialize_pool(token_pool_key)
+    model.set_oracle_config("pool-1", max_deviation_bps=100, max_age_seconds=300)
+    order = model.swap(
+        token_pool_key,
+        user="alice",
+        zero_for_one=True,
+        amount_in=ONE,
+        tick=0,
+        min_amount_out=0,
+    )
+
+    filler_share = model.fill(
+        order, True, model.get_balance_out(order, True), filler="bob"
+    )
+    assert filler_share == 988_000_000_000_000_000
+    assert model.protocol_surplus["token0"] == 0
+
+
+def test_oracle_capture_can_split_surplus_user_filler_protocol_50_25_25(token_pool_key):
+    model = AsyncSwap(fee_ppm=12_000)
+    model.initialize_pool(token_pool_key)
+    model.warp(1_000)
+    model.set_oracle_config(
+        "pool-1",
+        max_deviation_bps=100,
+        max_age_seconds=300,
+        user_capture_bps=5_000,
+        filler_capture_bps=2_500,
+        protocol_capture_bps=2_500,
+    )
+    model.set_oracle_quote("pool-1", tick=0)
+
+    order = model.swap(
+        token_pool_key,
+        user="alice",
+        zero_for_one=True,
+        amount_in=ONE,
+        tick=-500,
+        min_amount_out=0,
+    )
+
+    filler_share = model.fill(
+        order, True, model.get_balance_out(order, True), filler="bob"
+    )
+
+    assert model.protocol_surplus["token0"] > 0
+    assert filler_share > 0
+
+
+def test_oracle_capture_preserves_user_share_in_remaining_input(token_pool_key):
+    model = AsyncSwap(fee_ppm=12_000)
+    model.initialize_pool(token_pool_key)
+    model.warp(1_000)
+    model.set_oracle_config(
+        "pool-1",
+        max_deviation_bps=100,
+        max_age_seconds=300,
+        user_capture_bps=5_000,
+        filler_capture_bps=2_500,
+        protocol_capture_bps=2_500,
+    )
+    model.set_oracle_quote("pool-1", tick=0)
+
+    order = model.swap(
+        token_pool_key,
+        user="alice",
+        zero_for_one=True,
+        amount_in=ONE,
+        tick=-500,
+        min_amount_out=0,
+    )
+
+    before_remaining_input = model.get_balance_in(order, True)
+    fill_amount = (model.get_balance_out(order, True) + 1) // 2
+    model.fill(order, True, fill_amount, filler="bob")
+
+    assert (
+        model.get_balance_in(order, True)
+        > before_remaining_input - 494_000_000_000_000_000
+    )
