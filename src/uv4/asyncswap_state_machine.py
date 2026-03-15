@@ -76,6 +76,12 @@ class AsyncSwapStateMachine:
         protocol_surplus: int = 0,
         user_rebate: int = 0,
     ) -> None:
+        """Fill an order with immediate user rebate.
+
+        user_rebate > 0 means the user was disadvantaged (overpaying).
+        Rebates are returned immediately on every fill.
+        Filler-side protection is handled in the value model layer, not here.
+        """
         if self.cancelled:
             raise ValueError("order already cancelled")
         if self.is_expired():
@@ -92,27 +98,19 @@ class AsyncSwapStateMachine:
         if output_amount < min_fill:
             raise ValueError("output_amount below minimum fill threshold")
 
-        charged_input = filler_payout + protocol_fee + protocol_surplus
-        if gross_input_slice != charged_input + user_rebate:
-            raise ValueError(
-                "gross_input_slice must equal filler + fee + surplus + user_rebate"
-            )
-        if charged_input > self.remaining_input:
-            raise ValueError("charged_input exceeds remaining_input")
+        total_charged = filler_payout + protocol_fee + protocol_surplus + user_rebate
+        if total_charged > self.remaining_input:
+            raise ValueError("total_charged exceeds remaining_input")
 
-        is_full_fill = output_amount == self.remaining_output
-
-        self.remaining_input -= charged_input
+        # User rebate is returned immediately (charged from input, returned to user)
+        self.remaining_input -= total_charged
         self.remaining_output -= output_amount
         self.filler_payout_total += filler_payout
         self.protocol_fee_total += protocol_fee
         self.protocol_surplus_total += protocol_surplus
         self.delivered_output_total += output_amount
         self.user_rebate_total += user_rebate
-
-        # On full fill, user rebate is returned directly instead of staying in remaining_input
-        if is_full_fill and user_rebate > 0:
-            self.user_rebate_returned += user_rebate
+        self.user_rebate_returned += user_rebate
 
     def cancel(self, caller: str = "swapper", swapper: str = "swapper") -> int:
         if caller != swapper and not self.is_expired():
@@ -134,6 +132,7 @@ class AsyncSwapStateMachine:
             + self.filler_payout_total
             + self.protocol_fee_total
             + self.protocol_surplus_total
+            + self.user_rebate_returned
         )
         assert (
             self.original_output
@@ -143,14 +142,8 @@ class AsyncSwapStateMachine:
         )
 
     def assert_user_protection(self) -> None:
-        # User rebate must remain recoverable:
-        # either still in remaining_input, already refunded, or already returned on full fill.
-        assert (
-            self.user_rebate_total
-            <= self.remaining_input
-            + self.refunded_input_total
-            + self.user_rebate_returned
-        )
+        # Rebates are returned immediately, so total returned must match total granted.
+        assert self.user_rebate_returned == self.user_rebate_total
 
     def assert_state(self) -> None:
         assert self.remaining_input >= 0

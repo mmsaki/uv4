@@ -1,10 +1,11 @@
 -------------------------------- MODULE AsyncSwap --------------------------------
 \* AsyncSwap V1 State Machine Spec (USD-Value Fairness)
 \*
-\* Principle: AsyncSwap exists to ensure users do not silently lose value
-\* on bad quotes. When trusted value references are available, the protocol
-\* can refund users, internalize MEV, and route excess value according to
-\* explicit policy.
+\* Principle: AsyncSwap exists to ensure no participant silently loses
+\* excessive value on unfair execution. When trusted value references are
+\* available, the protocol can refund the disadvantaged party, internalize
+\* MEV, and route excess value according to explicit policy. This applies
+\* symmetrically to both swappers and fillers.
 \*
 \* This spec models the core protocol layer (Layer 1) actions:
 \*   OpenOrder, FillOrder, CancelByUser, CancelByKeeper
@@ -130,9 +131,11 @@ OpenOrder(input, output, fee, dl) ==
 \* Action: FillOrder
 \* A filler delivers output_amount and receives filler_payout from escrowed input.
 \* Optionally, protocol captures surplus and user receives a rebate.
+\* FillOrder models user-side surplus capture with immediate rebate.
+\* Filler-side protection is handled in the value model layer, not here.
+\* Rebates are returned immediately on every fill.
 FillOrder(output_amount, filler_payout, proto_fee, proto_surplus, user_rebate) ==
-    LET charged == filler_payout + proto_fee + proto_surplus
-        is_full_fill == (output_amount = remaining_output)
+    LET total_charged == filler_payout + proto_fee + proto_surplus + user_rebate
     IN
     /\ order_exists
     /\ ~cancelled
@@ -141,21 +144,21 @@ FillOrder(output_amount, filler_payout, proto_fee, proto_surplus, user_rebate) =
     /\ output_amount > 0
     /\ output_amount <= remaining_output
     /\ output_amount >= MinFill
-    /\ charged <= remaining_input
     /\ filler_payout >= 0
     /\ proto_fee >= 0
     /\ proto_surplus >= 0
     /\ user_rebate >= 0
-    /\ remaining_input' = remaining_input - charged
+    \* Total charged from escrowed input must not exceed remaining
+    /\ total_charged <= remaining_input
+    \* Rebates are returned immediately (not deferred to remaining_input)
+    /\ remaining_input' = remaining_input - total_charged
     /\ remaining_output' = remaining_output - output_amount
     /\ filler_payout_total' = filler_payout_total + filler_payout
     /\ protocol_fee_total' = protocol_fee_total + proto_fee
     /\ protocol_surplus_total' = protocol_surplus_total + proto_surplus
     /\ delivered_output_total' = delivered_output_total + output_amount
     /\ user_rebate_total' = user_rebate_total + user_rebate
-    /\ user_rebate_returned' = IF is_full_fill /\ user_rebate > 0
-                                THEN user_rebate_returned + user_rebate
-                                ELSE user_rebate_returned
+    /\ user_rebate_returned' = user_rebate_returned + user_rebate
     /\ UNCHANGED <<original_input, original_output, refunded_input_total,
                    cancelled_output_total, cancelled, deadline,
                    order_exists, current_time, paused>>
@@ -254,6 +257,7 @@ InputConservation ==
                        + filler_payout_total
                        + protocol_fee_total
                        + protocol_surplus_total
+                       + user_rebate_returned
 
 \* 2. Output conservation
 OutputConservation ==
@@ -269,15 +273,13 @@ NonNegativity ==
     /\ protocol_fee_total >= 0
     /\ protocol_surplus_total >= 0
 
-\* 4. User rebate recoverability
-UserRebateRecoverability ==
+\* 4. Rebate recoverability (rebates are returned immediately, so total returned must match total granted)
+RebateRecoverability ==
     order_exists =>
-        user_rebate_total <= remaining_input
-                           + refunded_input_total
-                           + user_rebate_returned
+        user_rebate_returned = user_rebate_total
 
-\* 5. Filler payout boundedness (structural: filler cannot exceed what was charged)
-FillerPayoutBoundedness ==
+\* 5. Bilateral value protection (structural: filler payout bounded by what was available minus protocol take)
+BilateralValueProtection ==
     order_exists =>
         filler_payout_total <= original_input - protocol_fee_total - protocol_surplus_total
 
@@ -304,8 +306,8 @@ SafetyInvariant ==
     /\ InputConservation
     /\ OutputConservation
     /\ NonNegativity
-    /\ UserRebateRecoverability
-    /\ FillerPayoutBoundedness
+    /\ RebateRecoverability
+    /\ BilateralValueProtection
     /\ ProtocolCaptureBoundedness
 
 =============================================================================

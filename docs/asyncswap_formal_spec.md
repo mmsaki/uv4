@@ -19,8 +19,8 @@ If the short summary is enough, read the **Summary** section. If you need the fu
 - **input**: the asset the user escrows
 - **output**: the asset the user expects to receive from a filler
 - **fee**: protocol revenue taken according to the configured fee policy
-- **surplus**: excess value extracted from a bad quote relative to a trusted fair-value reference
-- **user rebate**: the part of captured surplus reserved for the user rather than the filler or treasury
+- **surplus**: excess value extracted from an unfair quote relative to a trusted fair-value reference, regardless of which side is disadvantaged
+- **rebate**: the part of captured surplus returned to the disadvantaged participant (user or filler)
 - **common numeraire**: the shared value unit used to compare assets, currently intended to be USD-like
 - **oracle**: an external trusted value source used to estimate fair value
 - **governance**: the token-voting and timelock system that controls protocol policy
@@ -29,7 +29,7 @@ If the short summary is enough, read the **Summary** section. If you need the fu
 
 ### Principle
 
-**AsyncSwap V1 exists to ensure users do not silently lose value on bad quotes. When trusted value references are available, the protocol can refund users, internalize MEV, and route excess value according to explicit policy.**
+**AsyncSwap V1 exists to ensure no participant silently loses excessive value on unfair execution. When trusted value references are available, the protocol can refund the disadvantaged party, internalize MEV, and route excess value according to explicit policy. This applies symmetrically to both swappers and fillers.**
 
 ### State
 
@@ -59,9 +59,9 @@ This two-layer split matters because it separates:
 - output conservation
 - non-negativity
 - no double claim
-- user rebate recoverability
-- filler payout boundedness
-- user loss boundedness
+- rebate recoverability
+- bilateral value protection
+- participant loss boundedness
 - protocol capture boundedness
 - expiry safety
 - pause safety
@@ -126,21 +126,21 @@ The protocol may also:
 
 - charge protocol fees
 - measure value in a common USD-like numeraire
-- capture surplus / MEV from bad user quotes in value terms
-- route captured value between user, filler, and treasury according to governance policy
+- detect surplus from unfair execution in either direction
+- route captured value between the disadvantaged party and treasury according to governance policy
 
-This means AsyncSwap is not only a settlement mechanism. It is also a policy engine for deciding how value should move when quotes are materially unfair.
+AsyncSwap is not only a settlement mechanism. It is a **fair market** between swappers and fillers, with the protocol acting as a neutral policy engine that ensures neither side silently loses excessive value.
 
 ### v1 Fairness Rule
 
 For any fill where trusted token/USD prices are available, the protocol should be able to answer:
 
 - how much value the user gave up
-- how much value the user received
-- whether the quoted execution transferred excess value away from the user
-- how that excess value is split between user, filler, and treasury
+- how much value the filler gave up
+- whether the quoted execution transferred excess value away from either participant
+- how that excess value is split between the disadvantaged party and the treasury
 
-This fairness rule is the defining economic property of the v1 design.
+This bilateral fairness rule is the defining economic property of the v1 design. It applies symmetrically: the protocol protects both swappers and fillers.
 
 ---
 
@@ -440,25 +440,24 @@ For every reachable state:
 
 A filler may never receive more total input claim than the order made available for all fills.
 
-### 4.6 User rebate recoverability
+### 4.6 Rebate recoverability
 
-If oracle surplus capture gives a share to the user, that value must remain recoverable:
+If oracle surplus capture gives a share to the disadvantaged participant (user or filler), that value must be returned immediately on each fill. Rebates are not deferred to remaining input.
 
-- either in `remainingInput`
-- or already returned in a refund
+### 4.7 Bilateral value protection
 
-### 4.7 Filler payout boundedness
+Neither participant should silently lose excessive value:
 
-A filler should never receive more value than:
+- if the user is disadvantaged (overpaying relative to oracle): the user receives a rebate
+- if the filler is disadvantaged (overpaying relative to oracle): the filler receives a rebate
 
-- fair-value claim
-- plus the configured filler surplus share
+In both cases, the protocol captures its configured share of the surplus.
 
-### 4.8 User loss boundedness
+### 4.8 Participant loss boundedness
 
-User loss must be explicitly measurable in common-value terms.
+Both user loss and filler loss must be explicitly measurable in common-value terms.
 
-If the protocol chooses to allow bad quotes to execute, then any excess loss beyond fair value must be routed according to policy, not leaked implicitly.
+Any excess loss beyond oracle fair value for either participant must be routed according to governance policy, not leaked implicitly.
 
 ### 4.9 Protocol capture boundedness
 

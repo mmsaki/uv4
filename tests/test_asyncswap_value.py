@@ -20,6 +20,7 @@ def test_aave_usdt_bad_quote_shows_user_loss_in_common_usd_unit():
     )
 
     assert preview.active is True
+    assert preview.disadvantaged == "user"
     assert preview.input_value_usd_x18 == 110 * WAD
     assert preview.output_value_usd_x18 == 100 * WAD
     assert preview.loss_bps == 909
@@ -103,4 +104,30 @@ def test_good_quote_has_no_capture():
     )
 
     assert preview.active is False
+    assert preview.disadvantaged == "none"
     assert preview.filler_share_input == 1 * 10**18
+
+
+def test_filler_disadvantaged_gets_rebate():
+    model = AsyncSwapUsdOracleModel(split=SurplusSplit(5000, 2500, 2500))
+    model.register_token("ETH", 18)
+    model.register_token("USDC", 6)
+    model.warp(1_000)
+    model.set_quote("ETH", 3000 * WAD)
+    model.set_quote("USDC", 1 * WAD)
+
+    # User order is extremely favorable: giving only 0.5 ETH for 3000 USDC
+    # Fair claim would be 1 ETH, so filler is overpaying
+    preview = model.preview_fill(
+        input_token="ETH",
+        output_token="USDC",
+        claim_share=500_000_000_000_000_000,
+        output_amount=3000 * 10**6,
+    )
+
+    assert preview.active is True
+    assert preview.disadvantaged == "filler"
+    assert preview.surplus_input > 0
+    assert preview.filler_share_input > 500_000_000_000_000_000
+    assert preview.user_share_input < 0
+    assert preview.protocol_share_input > 0

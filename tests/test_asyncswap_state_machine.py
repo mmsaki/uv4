@@ -42,7 +42,7 @@ def test_on_fill_mode_half_fill_then_cancel_conserves_value():
     machine.assert_state()
 
 
-def test_surplus_full_fill_auto_returns_user_rebate():
+def test_surplus_full_fill_returns_user_rebate_immediately():
     machine = AsyncSwapStateMachine.open_order(
         original_input=ONE,
         original_output=100_000_000,
@@ -57,12 +57,12 @@ def test_surplus_full_fill_auto_returns_user_rebate():
     )
 
     assert machine.remaining_output == 0
-    # On full fill, user rebate is returned directly
+    # Rebate returned immediately
     assert machine.user_rebate_returned == 45_454_545_454_545_455
     machine.assert_state()
 
 
-def test_surplus_partial_fill_keeps_user_rebate_recoverable():
+def test_surplus_partial_fill_returns_user_rebate_immediately():
     machine = AsyncSwapStateMachine.open_order(
         original_input=ONE,
         original_output=200_000_000,
@@ -77,9 +77,27 @@ def test_surplus_partial_fill_keeps_user_rebate_recoverable():
     )
 
     assert machine.remaining_output == 100_000_000
-    # Partial fill: user rebate stays recoverable, not auto-returned
-    assert machine.user_rebate_returned == 0
-    assert machine.remaining_input >= machine.user_rebate_total
+    # Rebate returned immediately even on partial fill
+    assert machine.user_rebate_returned == 22_727_272_727_272_727
+    machine.assert_state()
+
+
+def test_filler_disadvantaged_detection_in_value_model():
+    """Filler-side protection is handled in the USD-value model, not the state machine.
+    This test just verifies the state machine allows the fill to proceed and conserves value."""
+    machine = AsyncSwapStateMachine.open_order(
+        original_input=ONE,
+        original_output=100_000_000,
+    )
+
+    machine.fill(
+        output_amount=100_000_000,
+        gross_input_slice=ONE,
+        filler_payout=ONE,
+    )
+
+    assert machine.remaining_output == 0
+    assert machine.filler_payout_total == ONE
     machine.assert_state()
 
 
@@ -130,16 +148,15 @@ def test_batch_equivalence_for_two_independent_orders():
     assert a.filler_payout_total + b.filler_payout_total == 2_964_000_000_000_000_000
 
 
-def test_invalid_fill_that_breaks_conservation_reverts():
+def test_invalid_fill_that_exceeds_remaining_input_reverts():
     machine = AsyncSwapStateMachine.open_order(original_input=ONE, original_output=100)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="total_charged exceeds remaining_input"):
         machine.fill(
             output_amount=100,
-            gross_input_slice=ONE,
-            filler_payout=900_000_000_000_000_000,
-            protocol_surplus=50_000_000_000_000_000,
-            user_rebate=10,
+            gross_input_slice=ONE + 1,
+            filler_payout=ONE,
+            user_rebate=1,
         )
 
 

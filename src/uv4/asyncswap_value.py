@@ -39,6 +39,7 @@ class ValueCapturePreview:
     input_value_usd_x18: int
     output_value_usd_x18: int
     loss_bps: int
+    disadvantaged: str = "none"  # "user", "filler", or "none"
 
 
 class AsyncSwapUsdOracleModel:
@@ -132,7 +133,8 @@ class AsyncSwapUsdOracleModel:
         output_value = self.value_usd_x18(output_token, output_amount)
         fair_claim = self.amount_from_usd_x18(input_token, output_value)
 
-        if claim_share <= fair_claim:
+        if claim_share == fair_claim:
+            # Perfectly fair execution
             return ValueCapturePreview(
                 active=False,
                 claim_share=claim_share,
@@ -144,17 +146,46 @@ class AsyncSwapUsdOracleModel:
                 input_value_usd_x18=input_value,
                 output_value_usd_x18=output_value,
                 loss_bps=0,
+                disadvantaged="none",
             )
 
-        surplus = claim_share - fair_claim
-        user_share = surplus * self.split.user_bps // 10_000
-        filler_bonus = surplus * self.split.filler_bps // 10_000
-        protocol_share = surplus - user_share - filler_bonus
-        filler_share = fair_claim + filler_bonus
+        if claim_share > fair_claim:
+            # User is disadvantaged (overpaying)
+            surplus = claim_share - fair_claim
+            user_rebate = surplus * self.split.user_bps // 10_000
+            filler_bonus = surplus * self.split.filler_bps // 10_000
+            protocol_share = surplus - user_rebate - filler_bonus
+            filler_share = fair_claim + filler_bonus
+            loss_bps = (
+                0
+                if input_value == 0
+                else (input_value - output_value) * 10_000 // input_value
+            )
+
+            return ValueCapturePreview(
+                active=True,
+                claim_share=claim_share,
+                fair_claim_share=fair_claim,
+                surplus_input=surplus,
+                user_share_input=user_rebate,
+                filler_share_input=filler_share,
+                protocol_share_input=protocol_share,
+                input_value_usd_x18=input_value,
+                output_value_usd_x18=output_value,
+                loss_bps=loss_bps,
+                disadvantaged="user",
+            )
+
+        # Filler is disadvantaged (overpaying — user quote is too favorable)
+        surplus = fair_claim - claim_share
+        filler_rebate = surplus * self.split.filler_bps // 10_000
+        user_reduction = surplus * self.split.user_bps // 10_000
+        protocol_share = surplus - filler_rebate - user_reduction
+        filler_share = claim_share + filler_rebate
         loss_bps = (
             0
-            if input_value == 0
-            else (input_value - output_value) * 10_000 // input_value
+            if output_value == 0
+            else (output_value - input_value) * 10_000 // output_value
         )
 
         return ValueCapturePreview(
@@ -162,10 +193,11 @@ class AsyncSwapUsdOracleModel:
             claim_share=claim_share,
             fair_claim_share=fair_claim,
             surplus_input=surplus,
-            user_share_input=user_share,
+            user_share_input=-user_reduction,
             filler_share_input=filler_share,
             protocol_share_input=protocol_share,
             input_value_usd_x18=input_value,
             output_value_usd_x18=output_value,
             loss_bps=loss_bps,
+            disadvantaged="filler",
         )
