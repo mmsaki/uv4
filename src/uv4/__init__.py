@@ -39,6 +39,14 @@ from .asyncswap import (
     AsyncSwapModel,
     PoolManagerModel,
 )
+from .asyncswap_value import (
+    AsyncSwapUsdOracleModel,
+    SurplusSplit,
+    TokenMeta,
+    TokenQuote,
+    ValueCapturePreview,
+)
+from .asyncswap_state_machine import AsyncSwapStateMachine
 from eth_abi.abi import encode
 
 __all__ = [
@@ -73,6 +81,12 @@ __all__ = [
     "PoolManager",
     "AsyncSwapModel",
     "PoolManagerModel",
+    "AsyncSwapUsdOracleModel",
+    "SurplusSplit",
+    "TokenMeta",
+    "TokenQuote",
+    "ValueCapturePreview",
+    "AsyncSwapStateMachine",
 ]
 
 
