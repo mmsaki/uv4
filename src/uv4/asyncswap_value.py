@@ -1,3 +1,15 @@
+"""AsyncSwap USD-Value Fairness Model (v1.1)
+
+This module implements the token/USD fairness model for AsyncSwap.
+Each token has a trusted USD price feed. Surplus is measured by comparing
+the USD value of the input share against the USD value of the output amount.
+
+The fair claim share is computed as a cross-rate:
+    fairClaimShare = outputAmount * outputPrice / inputPrice
+
+This matches the Solidity v1.1 implementation in previewUsdSurplusCapture().
+"""
+
 from dataclasses import dataclass
 
 

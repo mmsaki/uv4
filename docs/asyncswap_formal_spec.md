@@ -142,6 +142,15 @@ For any fill where trusted token/USD prices are available, the protocol should b
 
 This bilateral fairness rule is the defining economic property of the v1 design. It applies symmetrically: the protocol protects both swappers and fillers.
 
+### v1.1 Token/USD Fairness
+
+In v1.1, the protocol can use per-token USD price feeds to measure fairness in a common numeraire for arbitrary token pairs:
+
+- each token has a trusted USD price via `ITokenPriceOracle`
+- the fair input share is computed as a cross-rate: `fillAmount * outputPrice / inputPrice`
+- surplus is measured in input-token terms as the difference between quoted and fair claim
+- when the token price oracle is not configured, the protocol falls back to the v1.0 pair-relative `sqrtPriceX96` path
+
 ---
 
 ## 2. State Variables
