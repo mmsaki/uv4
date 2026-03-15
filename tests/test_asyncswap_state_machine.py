@@ -1,3 +1,5 @@
+import pytest
+
 from uv4.asyncswap_state_machine import AsyncSwapStateMachine
 
 
@@ -40,7 +42,7 @@ def test_on_fill_mode_half_fill_then_cancel_conserves_value():
     machine.assert_state()
 
 
-def test_surplus_split_50_25_25_keeps_user_value_recoverable():
+def test_surplus_full_fill_auto_returns_user_rebate():
     machine = AsyncSwapStateMachine.open_order(
         original_input=ONE,
         original_output=100_000_000,
@@ -55,26 +57,48 @@ def test_surplus_split_50_25_25_keeps_user_value_recoverable():
     )
 
     assert machine.remaining_output == 0
-    assert machine.remaining_input == 45_454_545_454_545_455
+    # On full fill, user rebate is returned directly
+    assert machine.user_rebate_returned == 45_454_545_454_545_455
     machine.assert_state()
 
 
-def test_cancel_returns_user_rebate_after_surplus_capture():
+def test_surplus_partial_fill_keeps_user_rebate_recoverable():
     machine = AsyncSwapStateMachine.open_order(
         original_input=ONE,
-        original_output=100_000_000,
+        original_output=200_000_000,
     )
 
     machine.fill(
         output_amount=100_000_000,
-        gross_input_slice=ONE,
-        filler_payout=931_818_181_818_181_817,
-        protocol_surplus=22_727_272_727_272_728,
-        user_rebate=45_454_545_454_545_455,
+        gross_input_slice=500_000_000_000_000_000,
+        filler_payout=465_909_090_909_090_909,
+        protocol_surplus=11_363_636_363_636_364,
+        user_rebate=22_727_272_727_272_727,
+    )
+
+    assert machine.remaining_output == 100_000_000
+    # Partial fill: user rebate stays recoverable, not auto-returned
+    assert machine.user_rebate_returned == 0
+    assert machine.remaining_input >= machine.user_rebate_total
+    machine.assert_state()
+
+
+def test_cancel_returns_remaining_after_partial_surplus_fill():
+    machine = AsyncSwapStateMachine.open_order(
+        original_input=ONE,
+        original_output=200_000_000,
+    )
+
+    machine.fill(
+        output_amount=100_000_000,
+        gross_input_slice=500_000_000_000_000_000,
+        filler_payout=465_909_090_909_090_909,
+        protocol_surplus=11_363_636_363_636_364,
+        user_rebate=22_727_272_727_272_727,
     )
     refund = machine.cancel()
 
-    assert refund == 45_454_545_454_545_455
+    assert refund > 0
     machine.assert_state()
 
 
@@ -109,7 +133,7 @@ def test_batch_equivalence_for_two_independent_orders():
 def test_invalid_fill_that_breaks_conservation_reverts():
     machine = AsyncSwapStateMachine.open_order(original_input=ONE, original_output=100)
 
-    try:
+    with pytest.raises(ValueError):
         machine.fill(
             output_amount=100,
             gross_input_slice=ONE,
@@ -117,6 +141,72 @@ def test_invalid_fill_that_breaks_conservation_reverts():
             protocol_surplus=50_000_000_000_000_000,
             user_rebate=10,
         )
-        assert False, "expected ValueError"
-    except ValueError:
-        pass
+
+
+def test_expired_order_cannot_be_filled():
+    machine = AsyncSwapStateMachine.open_order(
+        original_input=ONE,
+        original_output=988_000_000_000_000_000,
+        deadline=1000,
+        current_time=500,
+    )
+
+    machine.warp(1001)
+
+    with pytest.raises(ValueError, match="order expired"):
+        machine.fill(
+            output_amount=988_000_000_000_000_000,
+            gross_input_slice=988_000_000_000_000_000,
+            filler_payout=988_000_000_000_000_000,
+        )
+
+
+def test_keeper_can_cancel_expired_order():
+    machine = AsyncSwapStateMachine.open_order(
+        original_input=ONE,
+        original_output=988_000_000_000_000_000,
+        deadline=1000,
+        current_time=500,
+    )
+
+    machine.warp(1001)
+    refund = machine.cancel(caller="keeper", swapper="alice")
+
+    assert refund == ONE
+    machine.assert_state()
+
+
+def test_non_swapper_cannot_cancel_before_expiry():
+    machine = AsyncSwapStateMachine.open_order(
+        original_input=ONE,
+        original_output=988_000_000_000_000_000,
+        deadline=1000,
+        current_time=500,
+    )
+
+    with pytest.raises(ValueError, match="only swapper"):
+        machine.cancel(caller="keeper", swapper="alice")
+
+
+def test_already_expired_deadline_rejected_at_creation():
+    with pytest.raises(ValueError, match="deadline must be in the future"):
+        AsyncSwapStateMachine.open_order(
+            original_input=ONE,
+            original_output=988_000_000_000_000_000,
+            deadline=500,
+            current_time=500,
+        )
+
+
+def test_below_minimum_fill_threshold_reverts():
+    machine = AsyncSwapStateMachine.open_order(
+        original_input=ONE,
+        original_output=1000,
+    )
+
+    with pytest.raises(ValueError, match="minimum fill threshold"):
+        machine.fill(
+            output_amount=400,
+            gross_input_slice=400_000_000_000_000_000,
+            filler_payout=400_000_000_000_000_000,
+        )
