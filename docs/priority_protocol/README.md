@@ -155,3 +155,10 @@ The current selection policy sorts exact rational prices before priority, includ
 clamped levels. Signed repricing and cancellation bind the immutable creation sequence as well as the
 shared nonce. Sell repricing that raises minimum output must satisfy the new bid floor, including
 when both old and new floors hit the cap. Stateful vectors check rejected reprices and rollback.
+
+
+Receipt measurements support both Solidity and native Huff projects. Exporters load the pool
+configuration before dumping state, and the receipt tool verifies the imported pool FeeVault.
+`examples/compare_matching_receipts.py SOLIDITY_JSON HUFF_BEFORE_JSON HUFF_AFTER_JSON OUTPUT_JSON`
+checks every emitted event for equality and reports receipt gas savings for 1, 2, 4, and 8 matches.
+Use the same dedicated local Anvil and compiler settings for all three reports.

@@ -43,6 +43,15 @@ for start in range(0, len(ops), 500):
 log = Path(log_path).read_text()
 router = re.search(r'benchmark_router: (0x[0-9a-fA-F]+)', log)[1]
 data = re.search(r'benchmark_calldata: (0x[0-9a-fA-F]+)', log)[1]
+# Verify that dumpState retained the pool's stored vault, not just the hook's immutable getter.
+# A missing cold slot can otherwise mint bids to zero in the imported fixture while matching succeeds.
+hook = '0x' + data[10 + 4 * 64:10 + 5 * 64][-40:]
+pool_id = rpc('web3_sha3', ['0x' + data[10:10 + 5 * 64]])
+def selector(signature):
+    return rpc('web3_sha3', ['0x' + signature.encode().hex()])[:10]
+vault = rpc('eth_call', [dict(to=hook, data=selector('feeVault()')), 'latest'])[-40:]
+config = rpc('eth_call', [dict(to=hook, data=selector('asyncOrders(bytes32)') + pool_id[2:]), 'latest'])
+assert int(vault, 16) != 0 and config[2 + 2 * 64:2 + 3 * 64][-40:] == vault, 'Imported pool vault differs from hook; load asyncOrders before dumpState'
 sender = rpc('eth_accounts')[0]
 rpc('anvil_setBalance', [sender, hex(10**20)])
 match_topic = rpc('web3_sha3', ['0x' + b'AsyncOrdersMatched(bytes32,bytes32,bytes32,uint256,uint256)'.hex()])
@@ -65,11 +74,18 @@ for count in (1, 2, 4, 8):
     events = [dict(address=e['address'], topics=e['topics'], data=e['data']) for e in receipt['logs']]
     rows.append(dict(matches=count, receipt_gas=int(receipt['gasUsed'], 16), events=events))
     assert rpc('evm_revert', [snapshot])
-artifact_path = Path(state_path).resolve().parents[1] / 'out/AsyncMatching.sol/AsyncMatching.json'
+project = Path(state_path).resolve().parents[1]
+is_huff = (project / 'src/AsyncSwap.huff').exists()
+artifact_path = project / ('out/CurrentHuffHarness.sol/CurrentHuffHarness.json' if is_huff else 'out/AsyncMatching.sol/AsyncMatching.json')
 metadata = json.loads(artifact_path.read_text())['metadata']
 if isinstance(metadata, str):
     metadata = json.loads(metadata)
 compiler = dict(solc=metadata['compiler']['version'], optimizer=metadata['settings']['optimizer'])
+if is_huff:
+    import subprocess
+    compiler = dict(implementation='native Huff', hnc=subprocess.check_output(['hnc', '--version'], text=True).strip(), fixture_compiler=compiler)
+else:
+    compiler['implementation'] = 'Solidity'
 report = dict(compiler=compiler, fixture_sha256=__import__('hashlib').sha256(Path(state_path).read_bytes()).hexdigest(), method='Actual Router.matchBook transactions on isolated Anvil, imported Foundry fixture; '
                     '128 blockers, 32 pairs, standard ERC20s, no LPs; gasUsed includes intrinsic gas and '
                     'applied refunds. Each transaction starts from the same state. Not a worst-case bound.',

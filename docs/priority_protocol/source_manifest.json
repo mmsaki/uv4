@@ -1,6 +1,6 @@
 {
-  "description": "Reviewed core protocol at c40f30d234fee80df385d06998dad3f0e93df5a1: exact-price-first matching, incarnation-bound repricing and cancellation, FeeVault claims, pinned Unichain fork.",
-  "git_head": "c40f30d234fee80df385d06998dad3f0e93df5a1",
+  "description": "Reviewed core protocol at 03fb0066234487c119794d1e9337fda3b25b1843: exact-price-first matching, incarnation-bound signatures, FeeVault claims, and guarded gas-fixture export.",
+  "git_head": "03fb0066234487c119794d1e9337fda3b25b1843",
   "source_has_uncommitted_changes": false,
   "sha256": {
     "src/AsyncSwap.sol": "f35084163c3d83619e165b9c160c324f9f7ca750562195543c640588ed74f847",

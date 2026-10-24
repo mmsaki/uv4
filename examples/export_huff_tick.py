@@ -24,4 +24,7 @@ s+=''' }
  }
 }
 '''
-(Path(sys.argv[1]) / 'test/huff/TickParity.t.sol').write_text(s)
+out = Path(sys.argv[1]).resolve() / 'test/huff/TickParity.t.sol'
+out.write_text(s)
+import subprocess
+subprocess.run(['forge', 'fmt', str(out)], cwd=Path(sys.argv[1]).resolve(), check=True)
