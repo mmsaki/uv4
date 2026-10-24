@@ -1,8 +1,9 @@
 {
-  "description": "Reviewed core protocol at 03fb0066234487c119794d1e9337fda3b25b1843: exact-price-first matching, incarnation-bound signatures, FeeVault claims, and guarded gas-fixture export.",
-  "git_head": "03fb0066234487c119794d1e9337fda3b25b1843",
+  "description": "Reviewed protocol at e5e6ffd959c64f4c126021b8ffc3d48de0d7d597: exact-price-first matching, incarnation-bound signatures, and bounded direct claim-transfer settlement.",
+  "git_head": "e5e6ffd959c64f4c126021b8ffc3d48de0d7d597",
   "source_has_uncommitted_changes": false,
   "sha256": {
+    "foundry.toml": "39baba5231cb4aa09750a4d5ec0df7f8b13368ba23c44eeb392ebb10c06b634d",
     "src/AsyncSwap.sol": "f35084163c3d83619e165b9c160c324f9f7ca750562195543c640588ed74f847",
     "src/BaseHook.sol": "e910e8e809f50335b1bd0da2109e417ae87213b517c0d1d8720e3bf0a1259ab9",
     "src/FeeVault.sol": "7f8ccecc58e131b4b0712ec0721ae7042400ed7073af4017cfad08f2aa9e4bda",
@@ -12,14 +13,14 @@
     "src/Router.sol": "8b8da44f6ce7607efbc28fa03d3bf16db9bc4f459a8e285845ffb0ed3b3bc0e9",
     "src/TokenClaims.sol": "7d087a18c541658df2ebfa2af9469dbc00c1e70b8c7d9c82e58a090a8b2a59fa",
     "src/interfaces/ISignatureTransfer.sol": "fdd4edd4221ad8df5968da0d0f8aed1127e9bfe56bcb1c8cb77ea7e66875f54b",
-    "src/libraries/AsyncFiller.sol": "72f3770efadac9b9d389fb51c15807d474ee02667091bb247027a11b17b7b7ae",
-    "src/libraries/AsyncMatching.sol": "ac6e7ca4601f2d57bfc125ca5fa1755295b4eef2612f236f65a0f9b18fa4c7c9",
+    "src/libraries/AsyncFiller.sol": "b91d9d01f947e4755b9fbd38d02eadedae517fe9b3116b6df31846cfb420338f",
+    "src/libraries/AsyncMatching.sol": "022ed1a3052f1017153e4b1098cccdcd4cbbbcfabec516c8c98e48c072f2c149",
+    "src/libraries/ClaimTransfers.sol": "0c40f898d4ea256b0a53593b223a3deba6f5135b08777d1c37c77f316e8d96fb",
     "src/libraries/CurrencySettler.sol": "35fa91cd314c39fa825192ab2ceae2561ce14ff6b57a9be09fe4b1c3d652340d",
     "src/libraries/EligiblePrice.sol": "aa6b6c739440bdf4ee628b4dd4245db5af168e977380c4d30f1f30a23fd7ace7",
     "src/libraries/OrderSignatures.sol": "de8b02c38fecfd72938407d29041e0b0ec274a90667b5078ec693e2b4e247828",
     "src/libraries/RadixPriceTree.sol": "b2a672b6629caf28aa30df3a727b9026ddf3271ca422623a284f459db525dc53",
     "src/libraries/TickPrice.sol": "04fd6e95e3e9c720c9fc0ad8b555a5842e3d90e1fce0c4d4f525ff70d08c0467",
-    "src/types/AsyncOrder.sol": "9e95ddd736e597cbf4c8dde2145fe86e94bc0d08a1c01215e16a6df1dea256d9",
-    "foundry.toml": "39baba5231cb4aa09750a4d5ec0df7f8b13368ba23c44eeb392ebb10c06b634d"
+    "src/types/AsyncOrder.sol": "9e95ddd736e597cbf4c8dde2145fe86e94bc0d08a1c01215e16a6df1dea256d9"
   }
 }

@@ -117,6 +117,7 @@ class Protocol:
         self.events = []
         self.contract_signature_verifiers = {}
         self._depth = 0
+        self._claim_batch = None
         self.legacy_matching = legacy_matching
 
     @atomic
@@ -200,8 +201,7 @@ class Protocol:
     def _settle_bid(self, pool, amount):
         if not amount:
             return
-        self.ledger.burn_claim(HOOK, HOOK, self.numeraire, amount)
-        self.ledger.mint_claim(HOOK, VAULT, self.numeraire, amount)
+        self._credit_claim(VAULT, self.numeraire, amount)
         self.events.append(("PriorityFeeForfeited", pool.id.hex(), amount))
 
     def _reduce(self, pool, oid, used):
@@ -225,11 +225,21 @@ class Protocol:
         # Sorting reads the new bid, equivalent to remove/reinsert even at an unchanged price.
         return 0
 
+    def _credit_claim(self, recipient, token, amount):
+        if not amount:
+            return
+        if self._claim_batch is None or recipient == HOOK:
+            self.ledger.transfer_claim(HOOK, recipient, token, amount)
+            return
+        key = recipient, token
+        self._claim_batch[key] = uint(self._claim_batch.get(key, 0) + amount)
+        require(len(self._claim_batch) <= 33, "claim batch overflow")
+
     def _escrow_payout(self, recipient, token, amount, claims=False):
-        self.ledger.burn_claim(HOOK, HOOK, token, amount)
         if claims:
-            self.ledger.mint_claim(HOOK, recipient, token, amount)
+            self._credit_claim(recipient, token, amount)
         else:
+            self.ledger.burn_claim(HOOK, HOOK, token, amount)
             self.ledger.payout(HOOK, recipient, token, amount)
 
     def _pair(self, pool, first, second):
@@ -277,6 +287,7 @@ class Protocol:
     def match_book(self, pid, max_matches=8):
         require(1 <= max_matches <= 8, "InvalidMatchBound")
         pool, matched = self.pools[pid], 0
+        self._claim_batch = {}
         while matched < max_matches:
             buy, sell = pool.best(True), pool.best(False)
             if buy is None or sell is None or buy.price < sell.price:
@@ -294,6 +305,9 @@ class Protocol:
             if not self._pair(pool, buy, sell):
                 break
             matched += 1
+        for (recipient, token), amount in self._claim_batch.items():
+            self.ledger.transfer_claim(HOOK, recipient, token, amount)
+        self._claim_batch = None
         return matched
 
     @atomic

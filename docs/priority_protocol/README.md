@@ -76,19 +76,22 @@ it does not publish a new uv4 release or change repository remotes.
 
 ## Validation
 
-- 36 focused tests passed, including a deterministic 500-action lifecycle campaign and 5,000
-  randomized order pairs tested with both resting sides.
-- The earlier pre-repair coverage run was 96%; coverage was not remeasured for this repair.
-- 100 Python-generated cases pass against the actual Solidity matcher, including normal buckets,
-  clamped prices, exact ties, non-crosses and both resting sides.
-- Pool/order IDs and the hook/Router struct hashes agree with the Solidity signature library.
-- With the repair, the real Router/Hook/PoolManager clears the 20,000-USDC example without
-  cancelling or outbidding the blocker. `legacy_matching=True` preserves the historical failure.
-- Eight stateful Python/Solidity campaigns: 514 operations, 132 matches, 8,094 order-state checks,
-  and 8,094 maker-receipt checks, plus escrow and settled-fee claims.
-- The contracts full suite passes 805 tests, with one Unichain fork test skipped for missing RPC.
-- Regenerated Lean models and existing refinement proofs build (9,193 jobs). The new eligibility
-  index still requires a full storage-level refinement; an opaque helper assumption is not that proof.
+- 48 focused model/tool tests pass, including deterministic lifecycle campaigns, randomized
+  order pairs, claim-credit aggregation, self-credits, and receipt-comparison guards.
+- 100 Python-generated arithmetic/matching vectors and signature hashes pass against Solidity and Huff.
+- Eight shared stateful campaigns: 514 operations, 128 matches, 8,109 order-state checks, and
+  8,109 wallet checks, plus escrow and settled-fee claims.
+- The full local Solidity suite passes 867 tests, including the pinned Unichain fork tests.
+  Current Huff tests pass separately; historical Huff storage-layout fixtures are excluded.
+- Regenerated Lean models and focused refinements build. Shared-memory mutation in
+  `ClaimTransfers.credit` remains opaque to FormalMind 0.1.1; batch-memory refinement is not proven.
+
+Matching credits and priority fees use direct ERC-6909 claim transfers. A bounded match call
+combines credits by recipient and currency and flushes them in first-credit order before returning.
+The queue holds at most 33 distinct credits for eight matches. Self-credits transfer immediately;
+redemption and underlying token payouts remain separate. The ledger models claim transfers without
+changing unlock deltas. Hook matching/fee notices remain logical model events; exact PoolManager
+receipt events are compared directly between the two contracts by the receipt tools.
 
 See [coarse_prices.md](coarse_prices.md) and the machine-readable
 [coarse_prices.json](coarse_prices.json).

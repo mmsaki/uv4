@@ -60,6 +60,12 @@ class Ledger:
         self.claims[owner, currency] -= amount
         self.deltas[actor, currency] += amount
 
+    def transfer_claim(self, sender, recipient, currency, amount):
+        uint(amount)
+        require(self.claims[sender, currency] >= amount, "insufficient claims")
+        self.claims[sender, currency] -= amount
+        self.claims[recipient, currency] = uint(self.claims[recipient, currency] + amount)
+
     def take(self, actor, recipient, currency, amount):
         self.deltas[actor, currency] -= amount
         self.transfer(PM, recipient, currency, amount)

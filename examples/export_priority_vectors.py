@@ -55,7 +55,7 @@ contract PriorityPythonVectorsTest is FormalMatchD {
         bool trades = cross && asset > 0 && quote > 0;
         assertEq(result.matched, trades ? 1 : 0, "Python match existence");
         if (trades) {
-            Op memory last = result.ops[result.ops.length - 1];
+            Op memory last = _matchedOp(result.ops);
             assertEq(last.kind, OP_MATCHED);
             assertEq(last.amount, asset, "Python asset amount");
             assertEq(last.amount2, quote, "Python quote amount");
