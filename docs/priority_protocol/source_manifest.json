@@ -1,6 +1,6 @@
 {
-  "description": "Reviewed core protocol at fa5bcfc9b799c9d6306de75057adbb2312ecf185: exact-price-first matching, incarnation-bound repricing and cancellation, FeeVault claims.",
-  "git_head": "fa5bcfc9b799c9d6306de75057adbb2312ecf185",
+  "description": "Reviewed core protocol at c40f30d234fee80df385d06998dad3f0e93df5a1: exact-price-first matching, incarnation-bound repricing and cancellation, FeeVault claims, pinned Unichain fork.",
+  "git_head": "c40f30d234fee80df385d06998dad3f0e93df5a1",
   "source_has_uncommitted_changes": false,
   "sha256": {
     "src/AsyncSwap.sol": "f35084163c3d83619e165b9c160c324f9f7ca750562195543c640588ed74f847",
@@ -20,6 +20,6 @@
     "src/libraries/RadixPriceTree.sol": "b2a672b6629caf28aa30df3a727b9026ddf3271ca422623a284f459db525dc53",
     "src/libraries/TickPrice.sol": "04fd6e95e3e9c720c9fc0ad8b555a5842e3d90e1fce0c4d4f525ff70d08c0467",
     "src/types/AsyncOrder.sol": "9e95ddd736e597cbf4c8dde2145fe86e94bc0d08a1c01215e16a6df1dea256d9",
-    "foundry.toml": "c5b5971d9e21a893ff042fe20f57227a92b262bc42f62785f484bf3d8ed2ade4"
+    "foundry.toml": "39baba5231cb4aa09750a4d5ec0df7f8b13368ba23c44eeb392ebb10c06b634d"
   }
 }
