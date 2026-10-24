@@ -194,3 +194,17 @@ pytest -s -v --no-header
 # or
 ptw . -s -v --no-header
 ```
+
+## Priority-only Async Swap protocol model
+
+The current protocol lifecycle model lives in `uv4.priority_protocol`, separate from the earlier
+models. It includes order matching, immediate bid escrow, partial fills and dust refunds, Router
+fill guards, native claims, fee collection, signed actions, and atomic accounting. See the
+[model guide](docs/priority_protocol/README.md) and the
+[coarse-price simulation](docs/priority_protocol/coarse_prices.md) for coverage and limitations.
+
+```sh
+uv sync --extra priority-model
+uv run --extra priority-model pytest tests/priority_protocol -q
+uv run --extra priority-model python -m uv4.priority_protocol.scenarios
+```

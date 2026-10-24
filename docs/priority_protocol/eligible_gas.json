@@ -1,0 +1,125 @@
+{
+  "method": "Real hook/PoolManager unlock; dry-run accessed storage cooled; gross gasleft delta; no refund/intrinsic adjustment; >8 matches compose calls in one test-harness unlock. Standard ERC20 fixtures; no LP positions. These are measurements, not a worst-case gas certificate.",
+  "rows": [
+    {
+      "blockers": 128,
+      "matches": 1,
+      "gross_gas": 548122
+    },
+    {
+      "blockers": 128,
+      "matches": 2,
+      "gross_gas": 751862
+    },
+    {
+      "blockers": 128,
+      "matches": 4,
+      "gross_gas": 1175342
+    },
+    {
+      "blockers": 128,
+      "matches": 8,
+      "gross_gas": 2047008
+    },
+    {
+      "blockers": 128,
+      "matches": 16,
+      "gross_gas": 3786877
+    },
+    {
+      "blockers": 128,
+      "matches": 32,
+      "gross_gas": 7280650
+    },
+    {
+      "blockers": 0,
+      "matches": 1,
+      "gross_gas": 452954
+    },
+    {
+      "blockers": 0,
+      "matches": 2,
+      "gross_gas": 635406
+    },
+    {
+      "blockers": 0,
+      "matches": 4,
+      "gross_gas": 1021021
+    },
+    {
+      "blockers": 0,
+      "matches": 8,
+      "gross_gas": 1818257
+    },
+    {
+      "blockers": 0,
+      "matches": 16,
+      "gross_gas": 3395491
+    },
+    {
+      "blockers": 0,
+      "matches": 32,
+      "gross_gas": 6567163
+    },
+    {
+      "blockers": 1,
+      "matches": 1,
+      "gross_gas": 496378
+    },
+    {
+      "blockers": 1,
+      "matches": 2,
+      "gross_gas": 692152
+    },
+    {
+      "blockers": 1,
+      "matches": 4,
+      "gross_gas": 1082234
+    },
+    {
+      "blockers": 1,
+      "matches": 8,
+      "gross_gas": 1930212
+    },
+    {
+      "blockers": 1,
+      "matches": 16,
+      "gross_gas": 3611461
+    },
+    {
+      "blockers": 1,
+      "matches": 32,
+      "gross_gas": 6883944
+    },
+    {
+      "blockers": 16,
+      "matches": 1,
+      "gross_gas": 516326
+    },
+    {
+      "blockers": 16,
+      "matches": 2,
+      "gross_gas": 715453
+    },
+    {
+      "blockers": 16,
+      "matches": 4,
+      "gross_gas": 1129693
+    },
+    {
+      "blockers": 16,
+      "matches": 8,
+      "gross_gas": 1986830
+    },
+    {
+      "blockers": 16,
+      "matches": 16,
+      "gross_gas": 3681130
+    },
+    {
+      "blockers": 16,
+      "matches": 32,
+      "gross_gas": 7103759
+    }
+  ]
+}

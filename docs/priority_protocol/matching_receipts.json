@@ -1,0 +1,51 @@
+{
+  "method": "Actual Router.matchBook transactions on isolated Anvil, imported Foundry fixture; 128 blockers, 32 pairs, standard ERC20s, no LPs; gasUsed includes intrinsic gas and applied refunds. Each transaction starts from the same state. Not a worst-case bound.",
+  "client": "anvil/v1.8.6",
+  "rows": [
+    {
+      "matches": 1,
+      "before_gas": 586379,
+      "after_gas": 500583,
+      "saving_percent": 14.63,
+      "identical_events": true,
+      "events_sha256": "004d5dc2dd442d10ae2042f6c04792adf08663f6a71c0b50efb9b724f9de0b88"
+    },
+    {
+      "matches": 2,
+      "before_gas": 786552,
+      "after_gas": 636940,
+      "saving_percent": 19.02,
+      "identical_events": true,
+      "events_sha256": "569fc8463b480fdfafaccc99b8b99d4e513b55fffc346d43f4d1b0704e506b57"
+    },
+    {
+      "matches": 4,
+      "before_gas": 1220974,
+      "after_gas": 955580,
+      "saving_percent": 21.74,
+      "identical_events": true,
+      "events_sha256": "47fffc9592d8d0168a464742c049c5491e839c1d35284127c81cbd99a75889d2"
+    },
+    {
+      "matches": 8,
+      "before_gas": 2110075,
+      "after_gas": 1652381,
+      "saving_percent": 21.69,
+      "identical_events": true,
+      "events_sha256": "bdc09ca1e8812304dd828c961cc91e522fb6a4d4c4b07921c8659d7d8b6b19b0"
+    }
+  ],
+  "compiler": {
+    "solc": "0.8.26+commit.8a97fa7a",
+    "optimizer": {
+      "enabled": true,
+      "runs": 43690
+    }
+  },
+  "baseline_source": "Pre-optimization local exact-eligibility implementation from evidence/validation.json of the preceding revision; not a deployed version.",
+  "changes": [
+    "Stop ancestor repair at an unchanged summary, except the first refresh branch.",
+    "Retain unreachable node/summary slots; fully overwrite recycled nodes and repair summaries.",
+    "Keep the highest-priority bid when it crosses the minimum ask, skipping a redundant traversal."
+  ]
+}

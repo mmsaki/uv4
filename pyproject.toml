@@ -23,6 +23,12 @@ Issues = "https://github.com/mmsaki/uv4/issues"
 [project.scripts]
 uv4 = "uv4:main"
 
+[project.optional-dependencies]
+priority-model = [
+    "eth-hash[pycryptodome]>=0.7,<0.8",
+    "eth-keys>=0.7,<0.8",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
