@@ -178,9 +178,6 @@ class Protocol:
             bid = minimum_bid(notional)
         uint(bid, 64)
         require(bid >= minimum_bid(notional), "PriorityFeeTooSmall")
-        # The maker's 0.03% is set aside from the deposit; the book trades only the rest.
-        input_fee = trade_fee(amount_in)
-        require(amount_in - input_fee > 0, "ZeroAmount")
         salt = creation_salt(self.timestamp, self.block, PM, maker, amount_in, minimum_out, bid)
         oid = order_id(self.chain_id, pid, maker, zfo, salt)
         while oid in pool.orders:
@@ -189,8 +186,7 @@ class Protocol:
         # Immediate claim mint creates unlock debt, exactly as in beforeSwap/addOrder.
         self.ledger.mint_claim(HOOK, HOOK, token_in, amount_in)
         self.ledger.mint_claim(HOOK, HOOK, self.numeraire, bid)
-        order = Order(oid, maker, is_buy, zfo, amount_in - input_fee, minimum_out, bid, pool.sequence(), salt,
-                      input_fee=input_fee)
+        order = Order(oid, maker, is_buy, zfo, amount_in, minimum_out, bid, pool.sequence(), salt)
         order.created_sequence = order.sequence
         pool.orders[oid] = order
         self.events.append(("Created", pid.hex(), deepcopy(order)))
@@ -216,19 +212,14 @@ class Protocol:
         filled_bid = mul_div(old_bid, used, order.amount_in)
         self._settle_bid(pool, filled_bid)
         unfilled_bid = old_bid - filled_bid
-        # The filled share of the escrowed trade fee is earned, in the order's input currency.
-        filled_fee = mul_div(order.input_fee, used, order.amount_in)
-        self._credit_claim(VAULT, pool.tokens(order.is_buy)[0], filled_fee)
-        unfilled_fee = order.input_fee - filled_fee
         minimum = mul_div(order.minimum_out, remainder, order.amount_in, True)
         if remainder == 0 or (remainder if order.is_buy else minimum) < pool.minimum_order:
             self._settle_bid(pool, unfilled_bid)
             del pool.orders[oid]
-            return remainder + unfilled_fee
+            return remainder
         order.amount_in = remainder
         order.minimum_out = minimum
         order.priority_fee = unfilled_bid
-        order.input_fee = unfilled_fee
         if order.price != old_price:
             order.sequence = pool.sequence()
         # Sorting reads the new bid, equivalent to remove/reinsert even at an unchanged price.
@@ -261,8 +252,12 @@ class Protocol:
         seller, buyer, sid, bid = sell.owner, buy.owner, sell.id, buy.id
         sell_refund = self._reduce(pool, sid, amounts.asset)
         buy_refund = self._reduce(pool, bid, amounts.quote)
-        self._escrow_payout(buyer, pool.asset, amounts.asset, claims=True)
-        self._escrow_payout(seller, pool.numeraire, amounts.quote, claims=True)
+        # Each side receives its proceeds less the 0.02% trade fee, which goes to the vault.
+        asset_fee, quote_fee = trade_fee(amounts.asset), trade_fee(amounts.quote)
+        self._escrow_payout(buyer, pool.asset, amounts.asset - asset_fee, claims=True)
+        self._escrow_payout(seller, pool.numeraire, amounts.quote - quote_fee, claims=True)
+        self._credit_claim(VAULT, pool.asset, asset_fee)
+        self._credit_claim(VAULT, pool.numeraire, quote_fee)
         if sell_refund:
             self._escrow_payout(seller, pool.asset, sell_refund, claims=True)
         if buy_refund:
@@ -329,8 +324,7 @@ class Protocol:
 
     def _cancel(self, pool, order):
         del pool.orders[order.id]
-        # Nothing filled, so the trade fee is refunded with the input.
-        self._escrow_payout(order.owner, pool.tokens(order.is_buy)[0], order.amount_in + order.input_fee)
+        self._escrow_payout(order.owner, pool.tokens(order.is_buy)[0], order.amount_in)
         self._settle_bid(pool, order.priority_fee)
         self.events.append(("Cancelled", pool.id.hex(), order.id))
 
@@ -375,11 +369,11 @@ class Protocol:
         self.ledger.settle(filler, HOOK, token_out, gross, ROUTER)
         del pool.orders[oid]
         self._settle_bid(pool, order.priority_fee)
-        self.ledger.payout(HOOK, order.owner, token_out, order.minimum_out)
-        self.ledger.mint_claim(HOOK, VAULT, token_out, fee)
-        self._escrow_payout(filler, token_in, order.amount_in)
-        # The fill closed the order: the maker's escrowed trade fee is earned.
-        self._credit_claim(VAULT, token_in, order.input_fee)
+        fee_out, fee_in = trade_fee(order.minimum_out), trade_fee(order.amount_in)
+        self.ledger.payout(HOOK, order.owner, token_out, order.minimum_out - fee_out)
+        self.ledger.mint_claim(HOOK, VAULT, token_out, fee + fee_out)
+        self._escrow_payout(filler, token_in, order.amount_in - fee_in)
+        self._credit_claim(VAULT, token_in, fee_in)
         self.events.append(("Filled", pid.hex(), oid, filler, order.amount_in, order.minimum_out, fee))
 
     @atomic
@@ -389,10 +383,10 @@ class Protocol:
         require(pool.liquidity > 0, "NoActiveLiquidity")
         require(pool.quote_adapter is not None, "No AMM quote adapter configured")
         token_in, token_out = pool.tokens(order.is_buy)
-        # The protocol takes 0.01% of the whole remaining deposit; the rest is swapped at a 0.02% LP fee.
-        protocol_share = (order.amount_in + order.input_fee + 9_999) // 10_000
+        # The protocol takes 0.01% of the input; the rest is swapped at a 0.02% LP fee.
+        protocol_share = (order.amount_in + 9_999) // 10_000
         self._credit_claim(VAULT, token_in, protocol_share)
-        swapped = order.amount_in + order.input_fee - protocol_share
+        swapped = order.amount_in - protocol_share
         self.ledger.burn_claim(HOOK, HOOK, token_in, swapped)
         previous_fee = pool.lp_fee
         pool.lp_fee = 200
@@ -552,7 +546,7 @@ class Protocol:
                 sequences.add(order.sequence)
                 assert 0 <= order.priority_fee <= U64
                 token = pool.tokens(order.is_buy)[0]
-                obligations[token] = obligations.get(token, 0) + order.amount_in + order.input_fee
+                obligations[token] = obligations.get(token, 0) + order.amount_in
                 obligations[self.numeraire] = obligations.get(self.numeraire, 0) + order.priority_fee
         for c in set(obligations) | {c for who, c in self.ledger.claims if who == HOOK}:
             assert self.ledger.claims[HOOK, c] == obligations.get(c, 0), (c, "escrow mismatch")

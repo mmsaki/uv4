@@ -95,28 +95,13 @@ def minimum_bid(notional):
     return min(mul_div(notional, 10, 10_000), 100_000)
 
 def protocol_fee(net):
-    """AsyncSwap.calculatePoolFee: the filler's 0.03% of gross output, rounded down."""
+    """AsyncSwap.calculatePoolFee: no surcharge on top of the minimum; the trade fee comes out of proceeds."""
     uint(net)
-    return uint((net // 9997) * 3 + (net % 9997) * 3 // 9997)
+    return 0
 
 def trade_fee(amount):
-    """AsyncFiller.tradeFee: the maker's 0.03% of its deposit, rounded up."""
-    return mul_div(amount, 3, 10_000, True)
-
-def net_of(deposit):
-    """The input the book trades for a deposit, after its trade fee is set aside."""
-    return deposit - trade_fee(deposit)
-
-def deposit_for(net):
-    """The least deposit whose net input is exactly `net` (net_of is onto, stepping by 0 or 1)."""
-    require(net > 0, "ZeroAmount")
-    d = mul_div(net, 10_000, 9_997)
-    while net_of(d) < net:
-        d += 1
-    while d > 1 and net_of(d - 1) == net:
-        d -= 1
-    assert net_of(d) == net
-    return d
+    """AsyncFiller.tradeFee: the protocol's 0.02% of a payment, rounded up."""
+    return mul_div(amount, 2, 10_000, True)
 
 @dataclass
 class Order:
@@ -130,7 +115,6 @@ class Order:
     sequence: int
     salt: bytes = bytes(32)
     created_sequence: int = 0
-    input_fee: int = 0
 
     @property
     def price(self):

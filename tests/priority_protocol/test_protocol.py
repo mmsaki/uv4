@@ -4,7 +4,7 @@ import random
 import pytest
 from eth_keys import keys
 from uv4.priority_protocol import *
-from uv4.priority_protocol.arithmetic import U256, U128, I128, mul_div, trade_fee, deposit_for as D
+from uv4.priority_protocol.arithmetic import U256, U128, I128, mul_div, trade_fee
 from uv4.priority_protocol.identity import address
 from uv4.priority_protocol.scenarios import setup, fund, collision_case
 from uv4.priority_protocol import signatures
@@ -41,22 +41,22 @@ def test_immediate_escrow_and_cancel_forfeits_bid(world):
 
 def test_match_proportional_remaining_bid_and_minimum(world):
     m, p = world
-    sell = m.create(p, "alice", False, D(2 * 10**18), 2 * 10**9, 200_000)
-    m.create(p, "bob", True, D(10**9), 10**18)
+    sell = m.create(p, "alice", False, 2 * 10**18, 2 * 10**9, 200_000)
+    m.create(p, "bob", True, 10**9, 10**18)
     o = m.pools[p].orders[sell]
     assert (o.amount_in, o.minimum_out, o.priority_fee) == (10**18, 10**9, 100_000)
-    sell_fee = trade_fee(D(2 * 10**18))
-    assert o.input_fee == sell_fee - mul_div(sell_fee, 10**18, 2 * 10**18)
     assert o.sequence == 1
-    # Both bids' filled shares, plus the buyer's whole trade fee: it was used up.
-    assert m.ledger.claims[VAULT, "USDC"] == 200_000 + trade_fee(D(10**9))
-    assert m.ledger.claims[VAULT, "ASSET"] == mul_div(sell_fee, 10**18, 2 * 10**18)
+    # Both bids' filled shares, plus 0.02% of each side's proceeds.
+    assert m.ledger.claims[VAULT, "USDC"] == 200_000 + trade_fee(10**9)
+    assert m.ledger.claims[VAULT, "ASSET"] == trade_fee(10**18)
+    assert m.ledger.claims["alice", "USDC"] == 10**9 - trade_fee(10**9)
+    assert m.ledger.claims["bob", "ASSET"] == 10**18 - trade_fee(10**18)
 
 
 def test_price_improvement_not_credited_to_remainder(world):
     m, p = world
-    m.create(p, "bob", True, D(1500 * 10**6), 10**18)
-    oid = m.create(p, "alice", False, D(2 * 10**18), 2000 * 10**6)
+    m.create(p, "bob", True, 1500 * 10**6, 10**18)
+    oid = m.create(p, "alice", False, 2 * 10**18, 2000 * 10**6)
     o = m.pools[p].orders[oid]
     assert o.amount_in == 10**18
     assert o.minimum_out == 1000 * 10**6  # not 500 USDC
@@ -66,17 +66,14 @@ def test_dust_refund_closes_and_spends_remaining_bid(world):
     m, p = world
     m.set_minimum(m.owner, 500 * 10**6, p)
     old = m.ledger.balances["alice", "ASSET"]
-    sell = m.create(p, "alice", False, D(10**18), 1000 * 10**6)
-    m.create(p, "bob", True, D(750 * 10**6), 75 * 10**16)
+    sell = m.create(p, "alice", False, 10**18, 1000 * 10**6)
+    m.create(p, "bob", True, 750 * 10**6, 75 * 10**16)
     assert sell not in m.pools[p].orders
-    assert m.ledger.balances["alice", "ASSET"] == old - D(10**18)
-    # The unfilled quarter of the input returns with the unspent share of its trade fee.
-    sell_fee = trade_fee(D(10**18))
-    refund = 25 * 10**16 + sell_fee - mul_div(sell_fee, 75 * 10**16, 10**18)
-    assert m.ledger.claims["alice", "ASSET"] == refund
-    assert m.ledger.claims[VAULT, "USDC"] == 200_000 + trade_fee(D(750 * 10**6))
-    assert m.ledger.claims[VAULT, "ASSET"] == mul_div(sell_fee, 75 * 10**16, 10**18)
-    assert m.events[-1][-2:] == (refund, 0)
+    assert m.ledger.balances["alice", "ASSET"] == old - 10**18
+    assert m.ledger.claims["alice", "ASSET"] == 25 * 10**16  # refunds pay no trade fee
+    assert m.ledger.claims[VAULT, "USDC"] == 200_000 + trade_fee(750 * 10**6)
+    assert m.ledger.claims[VAULT, "ASSET"] == trade_fee(75 * 10**16)
+    assert m.events[-1][-2:] == (25 * 10**16, 0)
 
 
 def test_reprice_resets_sequence_and_checks_minimum(world):
@@ -102,8 +99,8 @@ def test_reprice_cannot_raise_sell_bid_floor(world):
 
 def test_reprice_keeps_pro_rated_bid_above_cap(world):
     m, p = world
-    sell = m.create(p, "alice", False, D(2 * 10**18), 1000 * 10**6)
-    m.create(p, "bob", True, D(500 * 10**6), 10**18)
+    sell = m.create(p, "alice", False, 2 * 10**18, 1000 * 10**6)
+    m.create(p, "bob", True, 500 * 10**6, 10**18)
     o = m.pools[p].orders[sell]
     assert o.priority_fee == 50_000
     unchanged(m, lambda: m.update_price(p, sell, "alice", 600 * 10**6), "PriorityFeeTooSmall")
@@ -120,10 +117,10 @@ def test_reprice_buy_bid_floor_follows_input(world):
 
 def test_priority_rekeys_after_partial_fill(world):
     m, p = world
-    first = m.create(p, "alice", False, D(2 * 10**18), 2 * 10**9, 200_000)
-    second = m.create(p, "alice", False, D(10**18), 10**9, 150_000)
+    first = m.create(p, "alice", False, 2 * 10**18, 2 * 10**9, 200_000)
+    second = m.create(p, "alice", False, 10**18, 10**9, 150_000)
     assert m.pools[p].best(False).id == first
-    m.create(p, "bob", True, D(10**9), 10**18)
+    m.create(p, "bob", True, 10**9, 10**18)
     assert m.pools[p].best(False).id == second
 
 
@@ -138,32 +135,34 @@ def test_authorization_and_failed_escrow_roll_back(world):
 
 def test_fill_window_and_live_price(world):
     m, p = world
-    oid = m.create(p, "alice", False, D(2 * 10**18), 2 * 10**9, 200_000)
-    m.create(p, "bob", True, D(10**9), 10**18)
+    oid = m.create(p, "alice", False, 2 * 10**18, 2 * 10**9, 200_000)
+    m.create(p, "bob", True, 10**9, 10**18)
     unchanged(m, lambda: m.fill(p, oid, "filler", 3 * 10**9, 2 * 10**18), "Input below")
     m.update_price(p, oid, "alice", 1500 * 10**6)
     unchanged(m, lambda: m.fill(p, oid, "filler", 10**9), "Price exceeds")
-    gross = 1500 * 10**6 + protocol_fee(1500 * 10**6)
-    m.fill(p, oid, "filler", gross, 10**18)
+    assert protocol_fee(1500 * 10**6) == 0  # the filler pays exactly the minimum
+    filler_asset = m.ledger.balances["filler", "ASSET"]
+    m.fill(p, oid, "filler", 1500 * 10**6, 10**18)
     assert oid not in m.pools[p].orders
-    # Bids, the buyer's used-up trade fee and the filler's 0.03%; the maker's whole fee in the asset.
-    assert m.ledger.claims[VAULT, "USDC"] == 300_000 + trade_fee(D(10**9)) + protocol_fee(1500 * 10**6)
-    assert m.ledger.claims[VAULT, "ASSET"] == trade_fee(D(2 * 10**18))
-    assert m.ledger.balances["filler", "ASSET"] == 10**60 + 10**18
+    # Bids, the match's quote fee, and the maker's 0.02% of its fill proceeds.
+    assert m.ledger.claims[VAULT, "USDC"] == 300_000 + trade_fee(10**9) + trade_fee(1500 * 10**6)
+    assert m.ledger.claims[VAULT, "ASSET"] == trade_fee(10**18) + trade_fee(10**18)
+    assert m.ledger.balances["filler", "ASSET"] - filler_asset == 10**18 - trade_fee(10**18)
 
 
 def test_blocked_payout_matches_and_failed_redemption_preserves_claims(world):
     m, p = world
-    m.create(p, "alice", False, D(10**18), 10**9)
+    m.create(p, "alice", False, 10**18, 10**9)
     m.ledger.blocked.add(("alice", "USDC"))
-    m.create(p, "bob", True, D(10**9), 10**18)
+    m.create(p, "bob", True, 10**9, 10**18)
     assert not m.pools[p].orders
-    assert m.ledger.claims["alice", "USDC"] == 10**9
-    assert m.ledger.claims["bob", "ASSET"] == 10**18
-    m.ledger.claim_allowances["alice", "token-claims", "USDC"] = 10**9
-    unchanged(m, lambda: m.redeem_claims("alice", "USDC", "alice", 10**9), "recipient rejected")
+    owed = 10**9 - trade_fee(10**9)
+    assert m.ledger.claims["alice", "USDC"] == owed
+    assert m.ledger.claims["bob", "ASSET"] == 10**18 - trade_fee(10**18)
+    m.ledger.claim_allowances["alice", "token-claims", "USDC"] = owed
+    unchanged(m, lambda: m.redeem_claims("alice", "USDC", "alice", owed), "recipient rejected")
     m.ledger.blocked.remove(("alice", "USDC"))
-    m.redeem_claims("alice", "USDC", "alice", 10**9)
+    m.redeem_claims("alice", "USDC", "alice", owed)
     assert m.ledger.claims["alice", "USDC"] == 0
 
 
@@ -174,13 +173,15 @@ def test_native_claim_redemption_and_revert():
     fee = protocol_fee(10**18)
     unchanged(m, lambda: m.fill(p, oid, "filler", 2 * 10**18, msg_value=0), "msg.value")
     m.fill(p, oid, "filler", 2 * 10**18, msg_value=10**18 + fee)
-    assert m.ledger.claims["alice", NATIVE] == 10**18
-    m.ledger.claim_allowances["alice", "native-claims", NATIVE] = 10**18
+    owed = 10**18 - trade_fee(10**18)
+    assert m.ledger.claims["alice", NATIVE] == owed
+    assert m.ledger.claims[VAULT, NATIVE] == trade_fee(10**18)
+    m.ledger.claim_allowances["alice", "native-claims", NATIVE] = owed
     m.ledger.blocked.add(("receiver", NATIVE))
-    unchanged(m, lambda: m.redeem_native("alice", "receiver", 10**18), "recipient rejected")
+    unchanged(m, lambda: m.redeem_native("alice", "receiver", owed), "recipient rejected")
     m.ledger.blocked.clear()
-    m.redeem_native("alice", "receiver", 10**18)
-    assert m.ledger.balances["receiver", NATIVE] == 10**18
+    m.redeem_native("alice", "receiver", owed)
+    assert m.ledger.balances["receiver", NATIVE] == owed
 
 
 def test_native_input_exact_value():
@@ -217,39 +218,30 @@ def test_uv4_liquidity_quote_and_fee_restore(world):
     assert any(e[0] == "LiquidityFilled" for e in m.events)
     assert any(e[0] == "PriorityFeeForfeited" for e in m.events)
     assert m.ledger.claims[VAULT, "USDC"] == minimum_bid(900 * 10**6)  # the bid goes to the FeeVault
-    # The protocol takes 0.01% of the whole deposit; the rest is swapped, at the 0.02% LP fee.
+    # The protocol takes 0.01% of the input; the rest is swapped, at the 0.02% LP fee.
     protocol_share = (10**18 + 9_999) // 10_000
     assert m.ledger.claims[VAULT, "ASSET"] == protocol_share
     assert next(e for e in m.events if e[0] == "LiquidityFilled")[3] == 10**18 - protocol_share
     assert m.ledger.claims[HOOK, "ASSET"] == 0
 
 
-def test_trade_fee_set_aside_and_refunded_on_cancel(world):
+def test_cancel_charges_no_trade_fee(world):
     m, p = world
     old = m.ledger.balances["alice", "ASSET"]
     oid = m.create(p, "alice", False, 10**18, 10**9)
-    o = m.pools[p].orders[oid]
-    assert (o.amount_in, o.input_fee) == (10**18 - 3 * 10**14, 3 * 10**14)
-    assert m.ledger.claims[HOOK, "ASSET"] == 10**18
+    assert m.pools[p].orders[oid].amount_in == 10**18
     m.cancel(p, oid, "alice")
     assert m.ledger.balances["alice", "ASSET"] == old
     assert m.ledger.claims[VAULT, "ASSET"] == 0
 
 
-def test_trade_fee_needs_a_nonzero_net_input(world):
+def test_exactly_touching_limits_match_and_both_sides_pay(world):
     m, p = world
-    m.set_minimum(m.owner, 0, p)
-    unchanged(m, lambda: m.create(p, "alice", False, 1, 1), "ZeroAmount")
-    oid = m.create(p, "alice", False, 2, 1)
-    assert m.pools[p].orders[oid].amount_in == 1
-
-
-def test_exactly_touching_limits_rest_once_both_sides_pay(world):
-    m, p = world
-    sell = m.create(p, "alice", False, 10**18, 10**9)
-    buy = m.create(p, "bob", True, 10**9, 10**18)
-    assert {sell, buy} <= set(m.pools[p].orders)
-    assert not any(e[0] == "Matched" for e in m.events)
+    m.create(p, "alice", False, 10**18, 10**9)
+    m.create(p, "bob", True, 10**9, 10**18)
+    assert not m.pools[p].orders
+    assert m.ledger.claims["alice", "USDC"] + m.ledger.claims[VAULT, "USDC"] - 200_000 == 10**9
+    assert m.ledger.claims["bob", "ASSET"] + m.ledger.claims[VAULT, "ASSET"] == 10**18
 
 
 def test_failed_lp_attempt_preserves_order_and_pool(world):
@@ -355,9 +347,9 @@ def test_multi_pool_and_default_minimum(world):
 
 def test_colliding_salt_walk_and_no_match_cap_bypass(world):
     m, p = world
-    ids = [m.create(p, "alice", False, D(10**18), 10**9) for _ in range(10)]
+    ids = [m.create(p, "alice", False, 10**18, 10**9) for _ in range(10)]
     assert len(set(ids)) == 10
-    m.create(p, "bob", True, D(10 * 10**9), 10 * 10**18)
+    m.create(p, "bob", True, 10 * 10**9, 10 * 10**18)
     assert sum(e[0] == "Matched" for e in m.events) == 8
     assert m.match_book(p, 8) == 2
     assert not m.pools[p].orders
@@ -476,11 +468,11 @@ def test_former_clamp_collisions_get_distinct_ticks():
         m, p = setup(price, minimum=0)
         for who in ("blocker", "honest", "buyer"):
             fund(m, p, who)
-        blocker = m.create(p, "blocker", False, D(blocker_in), blocker_out, 100_001)
-        sells = [m.create(p, "honest", False, D(asset), quote, 100_000) for _ in range(3)]
+        blocker = m.create(p, "blocker", False, blocker_in, blocker_out, 100_001)
+        sells = [m.create(p, "honest", False, asset, quote, 100_000) for _ in range(3)]
         assert m.pools[p].orders[blocker].price > m.pools[p].orders[sells[0]].price
         for _ in range(3):
-            m.create(p, "buyer", True, D(quote), asset, 100_000)
+            m.create(p, "buyer", True, quote, asset, 100_000)
         assert list(m.pools[p].orders) == [blocker]
     assert bucket_width(18, 6) == bucket_width(6, 6) == bucket_width(24, 6) == Fraction(1, 10_000)
 

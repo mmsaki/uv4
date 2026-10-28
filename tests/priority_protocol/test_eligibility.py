@@ -1,7 +1,7 @@
 from fractions import Fraction
 import random
 import pytest
-from uv4.priority_protocol.arithmetic import Order, crosses, match_amounts, deposit_for as D
+from uv4.priority_protocol.arithmetic import Order, crosses, match_amounts
 from uv4.priority_protocol.model import Protocol
 from uv4.priority_protocol.scenarios import setup, fund
 
@@ -13,10 +13,9 @@ from uv4.priority_protocol.scenarios import setup, fund
 def test_blocker_stays_while_twenty_orders_clear(price,a,q,ba,bq):
     m,p=setup(price)
     for who in ('bad','sell','buy'):fund(m,p,who)
-    # Net amounts: each maker deposits the least amount whose net input is the scenario's.
-    bad=m.create(p,'bad',False,D(ba),bq,100001)
-    for _ in range(20):m.create(p,'sell',False,D(a),q,100000)
-    for _ in range(20):m.create(p,'buy',True,D(q),a,100000)
+    bad=m.create(p,'bad',False,ba,bq,100001)
+    for _ in range(20):m.create(p,'sell',False,a,q,100000)
+    for _ in range(20):m.create(p,'buy',True,q,a,100000)
     assert list(m.pools[p].orders)==[bad]
     assert len([e for e in m.events if e[0]=='Matched'])==20
     assert m.pools[p].orders[bad].amount_in==ba
@@ -68,15 +67,15 @@ def test_same_tick_price_precedes_fee_and_age():
         for who in ("worse", "better", "taker"):
             fund(m, p, who)
         if buy:
-            worse = m.create(p, "worse", True, D(10**9), 10**18, 110000)
-            better = m.create(p, "better", True, D(10**9+1), 10**18, 100000)
+            worse = m.create(p, "worse", True, 10**9, 10**18, 110000)
+            better = m.create(p, "better", True, 10**9+1, 10**18, 100000)
             assert m.pools[p].orders[worse].price == m.pools[p].orders[better].price
-            m.create(p, "taker", False, D(10**18), 10**9, 100000)
+            m.create(p, "taker", False, 10**18, 10**9, 100000)
         else:
-            worse = m.create(p, "worse", False, D(10**18), 10**9+1, 110000)
-            better = m.create(p, "better", False, D(10**18), 10**9, 100000)
+            worse = m.create(p, "worse", False, 10**18, 10**9+1, 110000)
+            better = m.create(p, "better", False, 10**18, 10**9, 100000)
             assert m.pools[p].orders[worse].price == m.pools[p].orders[better].price
-            m.create(p, "taker", True, D(10**9+1), 10**18, 100000)
+            m.create(p, "taker", True, 10**9+1, 10**18, 100000)
         assert worse in m.pools[p].orders
         assert better not in m.pools[p].orders
         m.assert_invariants()

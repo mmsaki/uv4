@@ -5,7 +5,7 @@ from decimal import Decimal, localcontext
 from fractions import Fraction
 from pathlib import Path
 from uv4.q_number import Q6496
-from .arithmetic import U256, Q96, bucket_width, usdc_price, match_amounts, deposit_for
+from .arithmetic import U256, Q96, bucket_width, usdc_price, match_amounts
 from .identity import address
 from .model import Protocol
 from .ledger import ROUTER
@@ -46,12 +46,9 @@ def collision_case(name, price, blocker_in, blocker_out, trade_asset, trade_quot
     model.legacy_matching = True  # Preserve the historical counterexample explicitly.
     for who in ("blocker", "honest", "buyer"):
         fund(model, pid, who)
-    # Amounts are the orders' net inputs; each maker deposits the least amount that nets to them.
-    blocker = model.create(pid, "blocker", False, deposit_for(blocker_in), blocker_out, 100_001)
-    sell_ids = [model.create(pid, "honest", False, deposit_for(trade_asset), trade_quote, 100_000)
-                for _ in range(count)]
-    buy_ids = [model.create(pid, "buyer", True, deposit_for(trade_quote), trade_asset, 100_000)
-               for _ in range(count)]
+    blocker = model.create(pid, "blocker", False, blocker_in, blocker_out, 100_001)
+    sell_ids = [model.create(pid, "honest", False, trade_asset, trade_quote, 100_000) for _ in range(count)]
+    buy_ids = [model.create(pid, "buyer", True, trade_quote, trade_asset, 100_000) for _ in range(count)]
     pool = model.pools[pid]
     sell, buy, bad = pool.orders[sell_ids[0]], pool.orders[buy_ids[0]], pool.orders[blocker]
     assert sell.price == buy.price == bad.price

@@ -5,7 +5,6 @@ import random
 import sys
 from pathlib import Path
 from uv4.priority_protocol import Order, crosses, match_amounts
-from uv4.priority_protocol.arithmetic import deposit_for
 from uv4.priority_protocol.identity import address, order_id
 from uv4.priority_protocol.scenarios import setup
 from uv4.priority_protocol import signatures
@@ -26,8 +25,7 @@ for a, q, Q, A in vectors:
         buy = Order('b', 'buyer', True, False, Q, A, 100000, 1 if rb else 2)
         c = crosses(buy, sell)
         m = match_amounts(sell, buy, rb)
-        # Vectors are net inputs; each side deposits the least amount that nets to them.
-        calls.append(f'        _check({deposit_for(a)}, {q}, {deposit_for(Q)}, {A}, {str(rb).lower()}, {str(c).lower()}, {m.asset}, {m.quote});')
+        calls.append(f'        _check({a}, {q}, {Q}, {A}, {str(rb).lower()}, {str(c).lower()}, {m.asset}, {m.quote});')
 body = '''// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.26;
 
