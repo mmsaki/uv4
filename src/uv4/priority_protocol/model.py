@@ -6,7 +6,8 @@ book uses a sort instead of reproducing the radix allocator. Atomic calls snapsh
 from copy import deepcopy
 from dataclasses import dataclass, field
 from functools import wraps
-from .arithmetic import (Order, Revert, require, uint, price_key, crosses, match_amounts,
+from .arithmetic import (Order, Revert, require, uint, price_key, crosses, match_amounts, tick_at_sqrt_price,
+                         MIN_TICK, MAX_TICK,
                          minimum_bid, mul_div, protocol_fee, trade_fee, Q96, I128, U64)
 from .ledger import Ledger, HOOK, ROUTER, VAULT, PM, NATIVE
 from .identity import address, pool_id, order_id, creation_salt, digest
@@ -193,10 +194,26 @@ class Protocol:
         self.ledger.settle(maker, HOOK, token_in, amount_in, spender)
         if bid:
             self.ledger.settle(maker, HOOK, self.numeraire, bid, ROUTER)
-        self._match_incoming(pid, oid)
-        if oid in self.pools[pid].orders:
-            self._try_liquidity(pid, oid)
+        # The better venue goes first, then the other, each only while the order is open.
+        pool_first = self._pool_beats_book(self.pools[pid], is_buy)
+        for step in range(2):
+            if oid not in self.pools[pid].orders:
+                break
+            if (step == 0) == pool_first:
+                self._try_liquidity(pid, oid)
+            else:
+                self._match_incoming(pid, oid)
         return oid
+
+    def _pool_beats_book(self, pool, is_buy):
+        """AsyncSwap._poolBeatsBook: active liquidity and a spot price strictly better than the best
+        opposite level, compared as TickPrice keys (numeraire per asset)."""
+        side = [o.price for o in pool.orders.values() if o.is_buy != is_buy]
+        if not side or pool.liquidity == 0:
+            return False
+        tick = tick_at_sqrt_price(pool.sqrt_price_x96)
+        key = tick - MIN_TICK + 1 if pool.currency1 == pool.numeraire else MAX_TICK - tick + 1
+        return key < min(side) if is_buy else key > max(side)
 
     def _settle_bid(self, pool, amount):
         if not amount:

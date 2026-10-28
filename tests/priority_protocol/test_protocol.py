@@ -244,6 +244,20 @@ def test_exactly_touching_limits_match_and_both_sides_pay(world):
     assert m.ledger.claims["bob", "ASSET"] + m.ledger.claims[VAULT, "ASSET"] == 10**18
 
 
+def test_incoming_order_takes_the_pool_when_it_beats_the_book(world):
+    m, p = world
+    pool = m.pools[p]
+    adapter = Uv4SingleRange(pool.sqrt_price_x96 // 2, pool.sqrt_price_x96 * 2)
+    m.configure_liquidity(p, "lp", 10**30, 10**45, 10**45, adapter)
+    # Pool spot is 1000 USDC per asset; this ask wants 1100, so it rests.
+    ask = m.create(p, "alice", False, 10**18, 1100 * 10**6)
+    assert ask in m.pools[p].orders
+    m.create(p, "bob", True, 1100 * 10**6, 9 * 10**17)
+    assert ask in m.pools[p].orders  # the worse ask is left resting
+    assert not any(e[0] == "Matched" for e in m.events)
+    assert any(e[0] == "LiquidityFilled" for e in m.events)
+
+
 def test_failed_lp_attempt_preserves_order_and_pool(world):
     m, p = world
     pool = m.pools[p]
