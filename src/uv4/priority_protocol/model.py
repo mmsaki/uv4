@@ -7,7 +7,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from functools import wraps
 from .arithmetic import (Order, Revert, require, uint, price_key, crosses, match_amounts,
-                         minimum_bid, mul_div, protocol_fee, Q96, I128, U64)
+                         minimum_bid, mul_div, protocol_fee, trade_fee, Q96, I128, U64)
 from .ledger import Ledger, HOOK, ROUTER, VAULT, PM, NATIVE
 from .identity import address, pool_id, order_id, creation_salt, digest
 from . import signatures
@@ -94,7 +94,7 @@ class Uv4SingleRange:
 
     def quote(self, pool, amount, zero_for_one):
         from uv4.swap import Swap
-        out, after = Swap(pool.sqrt_price_x96, pool.liquidity, 3000).quote_exact_input(amount, zero_for_one)
+        out, after = Swap(pool.sqrt_price_x96, pool.liquidity, pool.lp_fee).quote_exact_input(amount, zero_for_one)
         require(self.lower < after < self.upper, "AMM quote crosses configured range")
         return Quote(amount, out, after)
 
@@ -178,6 +178,9 @@ class Protocol:
             bid = minimum_bid(notional)
         uint(bid, 64)
         require(bid >= minimum_bid(notional), "PriorityFeeTooSmall")
+        # The maker's 0.03% is set aside from the deposit; the book trades only the rest.
+        input_fee = trade_fee(amount_in)
+        require(amount_in - input_fee > 0, "ZeroAmount")
         salt = creation_salt(self.timestamp, self.block, PM, maker, amount_in, minimum_out, bid)
         oid = order_id(self.chain_id, pid, maker, zfo, salt)
         while oid in pool.orders:
@@ -186,7 +189,8 @@ class Protocol:
         # Immediate claim mint creates unlock debt, exactly as in beforeSwap/addOrder.
         self.ledger.mint_claim(HOOK, HOOK, token_in, amount_in)
         self.ledger.mint_claim(HOOK, HOOK, self.numeraire, bid)
-        order = Order(oid, maker, is_buy, zfo, amount_in, minimum_out, bid, pool.sequence(), salt)
+        order = Order(oid, maker, is_buy, zfo, amount_in - input_fee, minimum_out, bid, pool.sequence(), salt,
+                      input_fee=input_fee)
         order.created_sequence = order.sequence
         pool.orders[oid] = order
         self.events.append(("Created", pid.hex(), deepcopy(order)))
@@ -212,14 +216,19 @@ class Protocol:
         filled_bid = mul_div(old_bid, used, order.amount_in)
         self._settle_bid(pool, filled_bid)
         unfilled_bid = old_bid - filled_bid
+        # The filled share of the escrowed trade fee is earned, in the order's input currency.
+        filled_fee = mul_div(order.input_fee, used, order.amount_in)
+        self._credit_claim(VAULT, pool.tokens(order.is_buy)[0], filled_fee)
+        unfilled_fee = order.input_fee - filled_fee
         minimum = mul_div(order.minimum_out, remainder, order.amount_in, True)
         if remainder == 0 or (remainder if order.is_buy else minimum) < pool.minimum_order:
             self._settle_bid(pool, unfilled_bid)
             del pool.orders[oid]
-            return remainder
+            return remainder + unfilled_fee
         order.amount_in = remainder
         order.minimum_out = minimum
         order.priority_fee = unfilled_bid
+        order.input_fee = unfilled_fee
         if order.price != old_price:
             order.sequence = pool.sequence()
         # Sorting reads the new bid, equivalent to remove/reinsert even at an unchanged price.
@@ -233,7 +242,7 @@ class Protocol:
             return
         key = recipient, token
         self._claim_batch[key] = uint(self._claim_batch.get(key, 0) + amount)
-        require(len(self._claim_batch) <= 33, "claim batch overflow")
+        require(len(self._claim_batch) <= 34, "claim batch overflow")
 
     def _escrow_payout(self, recipient, token, amount, claims=False):
         if claims:
@@ -320,7 +329,8 @@ class Protocol:
 
     def _cancel(self, pool, order):
         del pool.orders[order.id]
-        self._escrow_payout(order.owner, pool.tokens(order.is_buy)[0], order.amount_in)
+        # Nothing filled, so the trade fee is refunded with the input.
+        self._escrow_payout(order.owner, pool.tokens(order.is_buy)[0], order.amount_in + order.input_fee)
         self._settle_bid(pool, order.priority_fee)
         self.events.append(("Cancelled", pool.id.hex(), order.id))
 
@@ -368,6 +378,8 @@ class Protocol:
         self.ledger.payout(HOOK, order.owner, token_out, order.minimum_out)
         self.ledger.mint_claim(HOOK, VAULT, token_out, fee)
         self._escrow_payout(filler, token_in, order.amount_in)
+        # The fill closed the order: the maker's escrowed trade fee is earned.
+        self._credit_claim(VAULT, token_in, order.input_fee)
         self.events.append(("Filled", pid.hex(), oid, filler, order.amount_in, order.minimum_out, fee))
 
     @atomic
@@ -377,19 +389,23 @@ class Protocol:
         require(pool.liquidity > 0, "NoActiveLiquidity")
         require(pool.quote_adapter is not None, "No AMM quote adapter configured")
         token_in, token_out = pool.tokens(order.is_buy)
-        self.ledger.burn_claim(HOOK, HOOK, token_in, order.amount_in)
+        # The protocol takes 0.01% of the whole remaining deposit; the rest is swapped at a 0.02% LP fee.
+        protocol_share = (order.amount_in + order.input_fee + 9_999) // 10_000
+        self._credit_claim(VAULT, token_in, protocol_share)
+        swapped = order.amount_in + order.input_fee - protocol_share
+        self.ledger.burn_claim(HOOK, HOOK, token_in, swapped)
         previous_fee = pool.lp_fee
-        pool.lp_fee = 3000
-        quote = pool.quote_adapter.quote(pool, order.amount_in, order.zero_for_one)
+        pool.lp_fee = 200
+        quote = pool.quote_adapter.quote(pool, swapped, order.zero_for_one)
         pool.lp_fee = previous_fee
-        require(quote.consumed == order.amount_in, "PartialLiquidityFill")
+        require(quote.consumed == swapped, "PartialLiquidityFill")
         require(0 < quote.output <= I128 and quote.output >= order.minimum_out, "LimitPriceNotMet")
         self.ledger.into_pool(HOOK, pid, token_in, quote.consumed)
         self.ledger.out_of_pool(HOOK, pid, token_out, quote.output)
         pool.sqrt_price_x96 = quote.sqrt_price_x96
         self.ledger.payout(HOOK, order.owner, token_out, quote.output)
         self._settle_bid(pool, order.priority_fee)
-        self.events.append(("LiquidityFilled", pid.hex(), oid, order.amount_in, quote.output))
+        self.events.append(("LiquidityFilled", pid.hex(), oid, swapped, quote.output))
 
     def _try_liquidity(self, pid, oid):
         try:
@@ -536,7 +552,7 @@ class Protocol:
                 sequences.add(order.sequence)
                 assert 0 <= order.priority_fee <= U64
                 token = pool.tokens(order.is_buy)[0]
-                obligations[token] = obligations.get(token, 0) + order.amount_in
+                obligations[token] = obligations.get(token, 0) + order.amount_in + order.input_fee
                 obligations[self.numeraire] = obligations.get(self.numeraire, 0) + order.priority_fee
         for c in set(obligations) | {c for who, c in self.ledger.claims if who == HOOK}:
             assert self.ledger.claims[HOOK, c] == obligations.get(c, 0), (c, "escrow mismatch")

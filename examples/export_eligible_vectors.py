@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 from uv4.priority_protocol.model import Protocol
 from uv4.priority_protocol.scenarios import fund
-from uv4.priority_protocol.arithmetic import Q96, U256, Revert
+from uv4.priority_protocol.arithmetic import Q96, U256, Revert, deposit_for
 from uv4.priority_protocol.ledger import HOOK, VAULT
 
 class Deferred(Protocol):
@@ -59,9 +59,10 @@ abstract contract EligiblePythonBase is FormalMatchD {
         assertEq(trades[n].amount,a,"Python asset transfer");
         assertEq(trades[n].amount2,q,"Python USDC transfer");
     }
-    function _state(uint256 i,uint256 a,uint256 q,uint256 f,uint256 seq,uint256 price) internal view {
+    function _state(uint256 i,uint256 a,uint256 q,uint256 f,uint256 seq,uint256 price,uint256 tf) internal view {
         AsyncFiller.OrderInfo memory o = _info(poolId,ids[i]);
         assertEq(o.amountIn,a,"Python remaining input");
+        assertEq(o.inputFee,tf,"Python remaining trade fee");
         assertEq(o.amountOutMin,q,"Python remaining minimum");
         assertEq(o.priorityFee,f,"Python remaining fee");
         assertEq(o.sequence,seq,"Python sequence");
@@ -75,10 +76,11 @@ abstract contract EligiblePythonBase is FormalMatchD {
         assertEq(manager.balanceOf(templates[i].owner,uint160(address(token0))),a,"Python asset claims");
         assertEq(manager.balanceOf(templates[i].owner,uint160(address(token1))),q,"Python quote claims");
     }
-    function _claims(uint256 a,uint256 q,uint256 f) internal view {
+    function _claims(uint256 a,uint256 q,uint256 fa,uint256 f) internal view {
         assertEq(manager.balanceOf(address(hook),uint160(address(token0))),a,"Python asset escrow");
         assertEq(manager.balanceOf(address(hook),uint160(address(token1))),q,"Python quote+bid escrow");
-        assertEq(manager.balanceOf(address(hook.feeVault()),uint160(address(token1))),f,"Python settled bids");
+        assertEq(manager.balanceOf(address(hook.feeVault()),uint160(address(token0))),fa,"Python asset trade fees");
+        assertEq(manager.balanceOf(address(hook.feeVault()),uint160(address(token1))),f,"Python settled bids and quote trade fees");
     }
 }
 '''
@@ -95,7 +97,7 @@ for campaign in range(8):
         pool=m.pools[pid]
         for i,oid in enumerate(oids):
             o=pool.orders.get(oid)
-            vals=(o.amount_in,o.minimum_out,o.priority_fee,o.sequence,o.price) if o else (0,0,0,0,0)
+            vals=(o.amount_in,o.minimum_out,o.priority_fee,o.sequence,o.price,o.input_fee) if o else (0,0,0,0,0,0)
             lines.append(f'        _state({i},'+','.join(map(str,vals))+');')
             stats['state_checks']+=1
             who=f'owner-{i}'
@@ -103,9 +105,12 @@ for campaign in range(8):
             q=m.ledger.balances[who,pool.numeraire]-10**60+deposits[i][1]
             lines.append(f'        _wallet({i},{a},{q});'); stats['wallet_checks']+=1
             lines.append(f'        _owed({i},{m.ledger.claims[who,pool.asset]},{m.ledger.claims[who,pool.numeraire]});')
-        lines.append(f'        _claims({m.ledger.claims[HOOK,pool.asset]},{m.ledger.claims[HOOK,pool.numeraire]},{m.ledger.claims[VAULT,pool.numeraire]});')
-    def add(buy,a,q,fee):
+        lines.append(f'        _claims({m.ledger.claims[HOOK,pool.asset]},{m.ledger.claims[HOOK,pool.numeraire]},{m.ledger.claims[VAULT,pool.asset]},{m.ledger.claims[VAULT,pool.numeraire]});')
+    def add(buy,net,q,fee):
+        # Scenarios are written in net inputs, which keeps their crossing structure under the
+        # 0.03% trade fee; the maker deposits the least amount that nets to `net`.
         global pool
+        a=deposit_for(net)
         who=f'owner-{len(oids)}';fund(m,pid,who)
         oid=m.create(pid,who,buy,a,q,fee);oids.append(oid);pool=m.pools[pid]
         deposits.append((0,a+fee) if buy else (a,fee))
