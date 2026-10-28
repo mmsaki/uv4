@@ -523,3 +523,12 @@ def test_unused_reprice_cannot_change_replacement_incarnation():
     m.update_price_with_sig(p, replacement, 2 * 10**9, 78, 100, sign(private, fresh))
     assert m.pools[p].orders[replacement].minimum_out == 2 * 10**9
     assert (maker, 78) in m.nonces
+
+
+def test_stale_signed_reprice_cannot_undo_a_direct_reprice():
+    m, p, maker, private = signing_world()
+    oid = m.create(p, maker, False, 10**18, 10**9)
+    stale = sign(private, signatures.action_digest(m.chain_id, m.pools[p], m.pools[p].orders[oid], 91, 100, 9 * 10**8))
+    m.update_price(p, oid, maker, 2 * 10**9)
+    unchanged(m, lambda: m.update_price_with_sig(p, oid, 9 * 10**8, 91, 100, stale), "InvalidSignature")
+    assert m.pools[p].orders[oid].minimum_out == 2 * 10**9

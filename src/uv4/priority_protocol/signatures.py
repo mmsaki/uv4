@@ -11,7 +11,7 @@ from .ledger import HOOK, ROUTER
 POOL = "PoolKey(address currency0,address currency1,uint24 fee,int24 tickSpacing,address hooks)"
 ORDER = "AsyncOrder(address maker,address tokenIn,address tokenOut,uint256 amountIn,uint256 amountOutMin,uint256 priorityFee,PoolKey pool)"
 SET = "SetExecutor(address maker,address executor,bool allow,PoolKey pool,uint256 nonce,uint256 deadline)"
-UPDATE = "UpdatePrice(address maker,address tokenIn,address tokenOut,uint256 amountIn,uint256 newAmountOutMin,bytes32 orderId,uint64 createdSequence,uint256 nonce,uint256 deadline)"
+UPDATE = "UpdatePrice(address maker,address tokenIn,address tokenOut,uint256 amountIn,uint256 newAmountOutMin,bytes32 orderId,uint64 sequence,uint256 nonce,uint256 deadline)"
 CANCEL = "CancelOrder(address maker,address tokenIn,address tokenOut,uint256 amountIn,bytes32 orderId,uint64 createdSequence,uint256 nonce,uint256 deadline)"
 PERMIT2 = "0x000000000022D473030F116dDEE9F6B43aC78BA3"
 
@@ -48,8 +48,9 @@ def action_digest(chain_id, pool, order, nonce, deadline, new_minimum=None):
         values += [new_minimum]
     types += ["bytes32"]
     values += [bytes.fromhex(order.id)]
+    # A reprice binds the queue sequence, which every reprice moves on; a cancel binds the incarnation.
     types += ["uint64"]
-    values += [order.created_sequence]
+    values += [order.sequence if new_minimum is not None else order.created_sequence]
     types += ["uint256", "uint256"]
     values += [nonce, deadline]
     return typed(chain_id, HOOK if new_minimum is not None else ROUTER,
