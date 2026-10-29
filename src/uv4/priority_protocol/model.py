@@ -413,26 +413,26 @@ class Protocol:
         pool.lp_fee = previous_fee
         require(quote.consumed == swapped, "PartialLiquidityFill")
         require(0 < quote.output <= I128, "LimitPriceNotMet")
-        premium = self._backrun_premium(pool, tick_at_sqrt_price(pool.sqrt_price_x96),
+        dynamic_fee = self._dynamic_fee_ordering(pool, tick_at_sqrt_price(pool.sqrt_price_x96),
                                         tick_at_sqrt_price(quote.sqrt_price_x96), quote.output)
-        net = quote.output - premium
+        net = quote.output - dynamic_fee
         require(net >= order.minimum_out, "LimitPriceNotMet")
         self.ledger.into_pool(HOOK, pid, token_in, quote.consumed)
         self.ledger.out_of_pool(HOOK, pid, token_out, quote.output)
         pool.sqrt_price_x96 = quote.sqrt_price_x96
-        # BackrunPremium.charge: half donated to in-range LPs, half to the vault as claims.
-        to_lps = premium // 2 if pool.liquidity else 0
+        # DynamicFeeOrdering.charge: half donated to in-range LPs, half to the vault as claims.
+        to_lps = dynamic_fee // 2 if pool.liquidity else 0
         self.ledger.into_pool(HOOK, pid, token_out, to_lps)
-        self.ledger.mint_claim(HOOK, VAULT, token_out, premium - to_lps)
+        self.ledger.mint_claim(HOOK, VAULT, token_out, dynamic_fee - to_lps)
         self.ledger.payout(HOOK, order.owner, token_out, net)
         self._settle_bid(pool, order.priority_fee)
         self.events.append(("LiquidityFilled", pid.hex(), oid, swapped, quote.output))
 
-    BACKRUN_WINDOW = 2
+    ORDERING_WINDOW = 2
 
-    def _backrun_premium(self, pool, tick_before, tick_after, amount_out):
-        """BackrunPremium.charge: half the price gap a fill closes toward the window's reference tick."""
-        if pool.ref_block == 0 or self.block > pool.ref_block + self.BACKRUN_WINDOW:
+    def _dynamic_fee_ordering(self, pool, tick_before, tick_after, amount_out):
+        """DynamicFeeOrdering.charge: half the price gap a fill closes toward the window's reference tick."""
+        if pool.ref_block == 0 or self.block > pool.ref_block + self.ORDERING_WINDOW:
             pool.ref_tick, pool.ref_block = tick_before, self.block
             return 0
         frm, to = tick_before - pool.ref_tick, tick_after - pool.ref_tick

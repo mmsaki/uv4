@@ -534,7 +534,7 @@ def test_stale_signed_reprice_cannot_undo_a_direct_reprice():
     assert m.pools[p].orders[oid].minimum_out == 2 * 10**9
 
 
-def test_backrun_after_a_pool_fill_pays_half_the_gap(world):
+def test_dynamic_fee_ordering_charges_half_the_gap_a_backrun_closes(world):
     m, p = world
     pool = m.pools[p]
     adapter = Uv4SingleRange(pool.sqrt_price_x96 // 2, pool.sqrt_price_x96 * 2)
@@ -546,10 +546,10 @@ def test_backrun_after_a_pool_fill_pays_half_the_gap(world):
     m.create(p, "alice", False, 10**20, 10 * 10**6)
     ref = pool.ref_tick
     assert tick_at_sqrt_price(pool.sqrt_price_x96) < ref - 10
-    # Bob buys back in the same block and pays a premium in the asset, half to LPs, half to the vault.
+    # Bob buys back in the same block and pays the dynamic fee in the asset, half to LPs, half to the vault.
     m.create(p, "bob", True, 50_000 * 10**6, 1)
-    premium_to_vault = m.ledger.claims[VAULT, asset] - vault_before
-    assert premium_to_vault > 0
+    dynamic_fee_to_vault = m.ledger.claims[VAULT, asset] - vault_before
+    assert dynamic_fee_to_vault > 0
     m.assert_invariants()
     # A backrun that lands after the window pays nothing: the old price is no longer a reference.
     m.create(p, "alice", False, 10**20, 10 * 10**6)
